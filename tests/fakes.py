@@ -19,7 +19,7 @@ from chartroom.knowledge.domain.models import (
     IndexingStatus,
     Language,
 )
-from chartroom.qa.domain import Passage
+from chartroom.qa.domain import AnswerLanguage, GeneratedAnswer, Passage
 from chartroom.shared.errors import ServiceUnavailableError
 from chartroom.shared.sparse import SparseVector
 
@@ -276,3 +276,17 @@ class StaticPassageRetriever:
     async def retrieve(self, question: str, limit: int) -> list[Passage]:
         self.calls.append((question, limit))
         return self.passages[:limit]
+
+
+class ScriptedGenerator:
+    """Порт AnswerGenerator для тестов: заранее заданный ответ модели и журнал вызовов."""
+
+    def __init__(self, answer: GeneratedAnswer) -> None:
+        self.answer = answer
+        self.calls: list[tuple[str, AnswerLanguage, list[Passage]]] = []
+
+    async def generate(
+        self, question: str, language: AnswerLanguage, passages: Sequence[Passage]
+    ) -> GeneratedAnswer:
+        self.calls.append((question, language, list(passages)))
+        return self.answer

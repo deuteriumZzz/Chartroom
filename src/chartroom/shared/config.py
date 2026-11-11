@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     gemini_api_key: SecretStr = SecretStr("")
     embedding_model: str = "gemini-embedding-001"
     embedding_dimensions: int = Field(default=768, ge=128, le=3072)
+    generation_model: str = "gemini-3.8-flash"
+    # Порог сходства лучшего фрагмента с вопросом, ниже которого — отказ без вызова модели.
+    # Не откалиброван: подбирается на золотом наборе (день 8).
+    refusal_min_similarity: float = Field(default=0.55, ge=0.0, le=1.0)
 
 
 @lru_cache

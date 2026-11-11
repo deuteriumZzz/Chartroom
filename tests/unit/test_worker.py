@@ -66,3 +66,8 @@ def test_worker_refuses_to_start_without_gemini_key() -> None:
 async def test_worker_container_builds_without_network_and_closes() -> None:
     container = build_worker_container(_settings("test-key"))
     await container.aclose()
+
+
+def test_worker_container_requires_gemini_key() -> None:
+    with pytest.raises(RuntimeError, match="GEMINI_API_KEY"):
+        build_worker_container(_settings(""))

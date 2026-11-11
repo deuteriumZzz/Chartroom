@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, ConfigDict, Field
 
 from chartroom.identity.api import OfficerUser
-from chartroom.qa.domain import DEFAULT_TOP_K, MAX_QUESTION_LENGTH, MAX_TOP_K
+from chartroom.qa.domain import DEFAULT_TOP_K, MAX_QUESTION_LENGTH, MAX_TOP_K, AnswerLanguage
 from chartroom.qa.service import QuestionService
 
 router = APIRouter(tags=["qa"])
@@ -25,7 +25,7 @@ class AskRequest(BaseModel):
     top_k: int = Field(default=DEFAULT_TOP_K, ge=1, le=MAX_TOP_K)
 
 
-class PassageResponse(BaseModel):
+class CitationResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     document_id: int
@@ -33,16 +33,26 @@ class PassageResponse(BaseModel):
     title: str
     section_path: str
     page: int | None
-    text: str
-    score: float
+    quote: str
 
 
 class AskResponse(BaseModel):
-    passages: list[PassageResponse]
+    answer: str
+    language: AnswerLanguage
+    refusal: bool
+    citations: list[CitationResponse]
 
 
 @router.post("/ask")
 async def ask(request: AskRequest, _: OfficerUser, questions: QuestionsDep) -> AskResponse:
-    """Фрагменты актуальных процедур, подтверждающие ответ на вопрос (RU или EN)."""
-    passages = await questions.ask(request.question, request.top_k)
-    return AskResponse(passages=[PassageResponse.model_validate(p) for p in passages])
+    """Ответ по актуальным процедурам с цитатами — или отказ, если в документах ответа нет.
+
+    Язык ответа — язык вопроса (RU или EN).
+    """
+    answer = await questions.ask(request.question, request.top_k)
+    return AskResponse(
+        answer=answer.text,
+        language=answer.language,
+        refusal=answer.refusal,
+        citations=[CitationResponse.model_validate(c) for c in answer.citations],
+    )

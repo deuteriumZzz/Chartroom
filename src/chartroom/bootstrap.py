@@ -31,8 +31,10 @@ from chartroom.knowledge.adapters.queue import CeleryIndexingQueue, build_celery
 from chartroom.knowledge.domain.models import DocumentFormat
 from chartroom.knowledge.ports import IndexingQueue, QueryEmbedder
 from chartroom.knowledge.service import ChunkRetriever, DocumentChunker, DocumentLibrary, Indexer
+from chartroom.qa.adapters.gemini import GeminiAnswerGenerator, UnconfiguredAnswerGenerator
 from chartroom.qa.adapters.knowledge import KnowledgePassageRetriever
-from chartroom.qa.ports import PassageRetriever
+from chartroom.qa.domain import RefusalPolicy
+from chartroom.qa.ports import AnswerGenerator, PassageRetriever
 from chartroom.qa.service import QuestionService
 from chartroom.shared.config import Settings
 
@@ -57,8 +59,9 @@ def build_container(
     session_factory: async_sessionmaker[AsyncSession] | None = None,
     queue: IndexingQueue | None = None,
     retriever: PassageRetriever | None = None,
+    generator: AnswerGenerator | None = None,
 ) -> Container:
-    """session_factory, queue и retriever подменяют тесты; в работе они строятся из настроек."""
+    """Аргументы после settings подменяют тесты; в работе всё строится из настроек."""
     engine = None
     if session_factory is None:
         engine = create_async_engine(settings.database_url, pool_pre_ping=True)
@@ -76,33 +79,38 @@ def build_container(
         uow_factory=lambda: SqlKnowledgeUnitOfWork(sessions),
         queue=queue or CeleryIndexingQueue(build_celery_producer(settings.redis_url)),
     )
+    gemini = _gemini_client(settings)
+    # Без ключа API стартует: загрузка работает, а поиск и генерация отвечают 503.
+    embedder: QueryEmbedder = UnconfiguredQueryEmbedder()
+    default_generator: AnswerGenerator = UnconfiguredAnswerGenerator()
+    if gemini is not None:
+        embedder = GeminiEmbedder(gemini, settings.embedding_model, settings.embedding_dimensions)
+        default_generator = GeminiAnswerGenerator(gemini, settings.generation_model)
+
     qdrant = None
     if retriever is None:
         qdrant = AsyncQdrantClient(url=settings.qdrant_url)
         chunks = ChunkRetriever(
             uow_factory=lambda: SqlKnowledgeUnitOfWork(sessions),
-            embedder=_query_embedder(settings),
+            embedder=embedder,
             index=QdrantChunkIndex(qdrant, settings.qdrant_collection),
         )
         retriever = KnowledgePassageRetriever(chunks)
+    questions = QuestionService(
+        retriever, generator or default_generator, RefusalPolicy(settings.refusal_min_similarity)
+    )
     return Container(
-        identity=identity,
-        library=library,
-        questions=QuestionService(retriever),
-        engine=engine,
-        qdrant=qdrant,
+        identity=identity, library=library, questions=questions, engine=engine, qdrant=qdrant
     )
 
 
-def _query_embedder(settings: Settings) -> QueryEmbedder:
+def _gemini_client(settings: Settings) -> genai.Client | None:
     key = settings.gemini_api_key.get_secret_value()
     if not key:
-        return UnconfiguredQueryEmbedder()  # API стартует и без ключа; поиск ответит 503
-    return GeminiEmbedder(
-        genai.Client(api_key=key, http_options=types.HttpOptions(timeout=30_000)),
-        settings.embedding_model,
-        settings.embedding_dimensions,
-    )
+        return None
+    # Таймаут и повторы с экспоненциальной паузой на каждый вызов LLM и эмбеддингов.
+    http = types.HttpOptions(timeout=30_000, retry_options=types.HttpRetryOptions(attempts=3))
+    return genai.Client(api_key=key, http_options=http)
 
 
 def build_document_chunker() -> DocumentChunker:
@@ -133,10 +141,9 @@ def build_worker_container(settings: Settings) -> WorkerContainer:
     engine = create_async_engine(settings.database_url, poolclass=NullPool)
     sessions = async_sessionmaker(engine, expire_on_commit=False)
     qdrant = AsyncQdrantClient(url=settings.qdrant_url)
-    gemini = genai.Client(
-        api_key=settings.gemini_api_key.get_secret_value(),
-        http_options=types.HttpOptions(timeout=30_000),
-    )
+    gemini = _gemini_client(settings)
+    if gemini is None:
+        raise RuntimeError("GEMINI_API_KEY is required to run the indexing worker")
     indexer = Indexer(
         uow_factory=lambda: SqlKnowledgeUnitOfWork(sessions),
         chunker=build_document_chunker(),

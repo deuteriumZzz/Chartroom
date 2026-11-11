@@ -10,6 +10,7 @@ from chartroom.identity.adapters.tokens import JwtTokenService
 from chartroom.identity.service import IdentityService
 from chartroom.knowledge.service import DocumentLibrary
 from chartroom.main import create_app
+from chartroom.qa.domain import GeneratedAnswer, RefusalPolicy
 from chartroom.qa.service import QuestionService
 from chartroom.shared.errors import DomainError
 from tests.fakes import (
@@ -18,6 +19,7 @@ from tests.fakes import (
     InMemoryKnowledgeUnitOfWork,
     KnowledgeStore,
     RecordingQueue,
+    ScriptedGenerator,
     StaticPassageRetriever,
 )
 
@@ -31,7 +33,11 @@ def app() -> FastAPI:
     )
     store = KnowledgeStore()
     library = DocumentLibrary(lambda: InMemoryKnowledgeUnitOfWork(store), RecordingQueue())
-    questions = QuestionService(StaticPassageRetriever([]))
+    questions = QuestionService(
+        StaticPassageRetriever([]),
+        ScriptedGenerator(GeneratedAnswer("", (), refusal=True)),
+        RefusalPolicy(min_similarity=0.5),
+    )
     return create_app(Container(identity=identity, library=library, questions=questions))
 
 
