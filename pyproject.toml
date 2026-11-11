@@ -87,6 +87,8 @@ ignore_imports = ["chartroom.knowledge.api -> chartroom.identity.api"]
 [tool.coverage.run]
 source = ["chartroom"]
 branch = true
+# Async SQLAlchemy работает через greenlet: без этого coverage не видит код после запросов к БД.
+concurrency = ["thread", "greenlet"]
 
 [tool.coverage.report]
 show_missing = true
