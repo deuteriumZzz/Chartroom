@@ -20,6 +20,12 @@ services:
       test: ["CMD-SHELL", "bash -c ':> /dev/tcp/127.0.0.1/6333' || exit 1"]
       interval: 3s
       retries: 10
+  redis:
+    image: redis:8.2-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      retries: 10
   api:
     build: .
     # .env.example — демо-значения для запуска одной командой; .env (если есть) их перекрывает
@@ -36,6 +42,17 @@ services:
       retries: 20
     depends_on:
       db: {condition: service_healthy}
+  worker:
+    build: .
+    command: ["celery", "-A", "chartroom.worker", "worker", "--loglevel=INFO", "--concurrency=2"]
+    env_file:
+      - path: .env.example
+      - path: .env
+        required: false
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      qdrant: {condition: service_healthy}
 volumes:
   pgdata:
   qdrant:
