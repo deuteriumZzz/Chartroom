@@ -4,6 +4,7 @@ from alembic import context
 from sqlalchemy.ext.asyncio import create_async_engine
 
 import chartroom.identity.adapters.persistence  # noqa: F401  регистрирует таблицы модуля в Base
+import chartroom.knowledge.adapters.persistence  # noqa: F401
 from chartroom.shared.config import get_settings
 from chartroom.shared.database import Base
 
