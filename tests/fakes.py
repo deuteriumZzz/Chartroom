@@ -19,6 +19,7 @@ from chartroom.knowledge.domain.models import (
     IndexingStatus,
     Language,
 )
+from chartroom.qa.domain import Passage
 from chartroom.shared.errors import ServiceUnavailableError
 from chartroom.shared.sparse import SparseVector
 
@@ -261,3 +262,15 @@ class RecordingQueue:
 
     async def enqueue(self, version_id: int) -> None:
         self.enqueued.append(version_id)
+
+
+class StaticPassageRetriever:
+    """Порт PassageRetriever для тестов qa: заданные фрагменты и журнал вызовов."""
+
+    def __init__(self, passages: list[Passage]) -> None:
+        self.passages = passages
+        self.calls: list[tuple[str, int]] = []
+
+    async def retrieve(self, question: str, limit: int) -> list[Passage]:
+        self.calls.append((question, limit))
+        return self.passages[:limit]

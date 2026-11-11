@@ -40,6 +40,7 @@ def require_role(minimum: Role) -> Callable[[User], Awaitable[User]]:
 
 
 AdminUser = Annotated[User, Depends(require_role(Role.ADMIN))]
+OfficerUser = Annotated[User, Depends(require_role(Role.OFFICER))]
 
 
 class TokenResponse(BaseModel):
