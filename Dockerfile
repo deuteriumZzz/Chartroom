@@ -8,6 +8,7 @@ RUN uv sync --frozen --no-dev --no-install-project
 COPY src ./src
 COPY migrations ./migrations
 COPY alembic.ini ./
+COPY data ./data
 RUN uv sync --frozen --no-dev
 
 # Приложению не нужны права root: при компрометации процесса это ограничивает ущерб.

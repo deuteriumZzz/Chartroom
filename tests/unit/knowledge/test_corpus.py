@@ -1,6 +1,8 @@
 """Регрессия синтетического корпуса: правки автора не должны ломать структуру и плашку «демо»."""
 
+import json
 import pathlib
+import re
 
 import pytest
 
@@ -37,3 +39,18 @@ def test_corpus_document_is_well_formed(path: pathlib.Path) -> None:
     chunks = build_document_chunker().chunk(path.name, path.read_bytes())
     assert len({chunk.section_path for chunk in chunks}) >= 4
     assert all(chunk.token_count <= MAX_CHUNK_TOKENS for chunk in chunks)
+
+
+def test_manifest_lists_every_document_with_its_own_header() -> None:
+    manifest = json.loads((CORPUS / "manifest.json").read_text(encoding="utf-8"))
+    assert sorted(entry["path"] for entry in manifest) == sorted(
+        path.relative_to(CORPUS).as_posix() for path in DOCUMENTS
+    )
+    for entry in manifest:
+        text = (CORPUS / entry["path"]).read_text(encoding="utf-8")
+        assert text.startswith(f"# {entry['title']}\n")
+        assert entry["language"] == entry["path"].split("/")[0]
+        revision = re.search(r"\*\*(?:Редакция|Revision):\*\* (\S+)", text)
+        issued = re.search(r"\*\*(?:Дата|Date):\*\* (\S+)", text)
+        assert revision and issued
+        assert (entry["version"], entry["issued_on"]) == (revision[1], issued[1])

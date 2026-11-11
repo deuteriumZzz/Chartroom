@@ -1,0 +1,72 @@
+[
+  {
+    "path": "en/bunkering.md",
+    "title": "Bunkering Operations",
+    "version": "2",
+    "language": "en",
+    "issued_on": "2026-05-18"
+  },
+  {
+    "path": "en/enclosed-space-entry.md",
+    "title": "Enclosed Space Entry",
+    "version": "3",
+    "language": "en",
+    "issued_on": "2026-09-10"
+  },
+  {
+    "path": "en/internal-ism-audit.md",
+    "title": "Internal ISM Audit",
+    "version": "5",
+    "language": "en",
+    "issued_on": "2026-03-14"
+  },
+  {
+    "path": "en/non-conformity-reporting.md",
+    "title": "Reporting Non-conformities, Accidents and Near Misses",
+    "version": "3",
+    "language": "en",
+    "issued_on": "2026-02-20"
+  },
+  {
+    "path": "en/oil-spill-response.md",
+    "title": "Oil Spill Response on Board",
+    "version": "1",
+    "language": "en",
+    "issued_on": "2026-04-02"
+  },
+  {
+    "path": "ru/abandon-ship.md",
+    "title": "Оставление судна",
+    "version": "4",
+    "language": "ru",
+    "issued_on": "2026-07-20"
+  },
+  {
+    "path": "ru/fire-emergency.md",
+    "title": "Действия при пожаре на судне",
+    "version": "3",
+    "language": "ru",
+    "issued_on": "2026-09-01"
+  },
+  {
+    "path": "ru/man-overboard.md",
+    "title": "Человек за бортом",
+    "version": "2",
+    "language": "ru",
+    "issued_on": "2026-08-15"
+  },
+  {
+    "path": "ru/mooring-operations.md",
+    "title": "Швартовные операции",
+    "version": "2",
+    "language": "ru",
+    "issued_on": "2026-06-30"
+  },
+  {
+    "path": "ru/psc-inspection.md",
+    "title": "Подготовка к проверке государства порта (PSC)",
+    "version": "1",
+    "language": "ru",
+    "issued_on": "2026-10-05"
+  }
+]

@@ -1,4 +1,4 @@
-.PHONY: up lint test user
+.PHONY: up lint test user seed
 
 up:
 	docker compose up --build
@@ -18,3 +18,7 @@ test:
 # make user EMAIL=admin@ship.test ROLE=admin  (пароль спросит интерактивно)
 user:
 	docker compose exec api python -m chartroom.cli create-user $(EMAIL) --role $(ROLE)
+
+# Загрузить демо-корпус и поставить его в очередь индексации (нужен GEMINI_API_KEY в .env).
+seed:
+	docker compose exec api python -m chartroom.cli seed-corpus
