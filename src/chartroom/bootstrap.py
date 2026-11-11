@@ -14,6 +14,14 @@ from chartroom.identity.adapters.passwords import Argon2PasswordHasher
 from chartroom.identity.adapters.persistence import SqlIdentityUnitOfWork
 from chartroom.identity.adapters.tokens import JwtTokenService
 from chartroom.identity.service import IdentityService
+from chartroom.knowledge.adapters.parsers import (
+    DocxParser,
+    MarkdownParser,
+    PdfParser,
+    PlainTextParser,
+)
+from chartroom.knowledge.domain.models import DocumentFormat
+from chartroom.knowledge.service import KnowledgeService
 from chartroom.shared.config import Settings
 
 
@@ -44,3 +52,14 @@ def build_container(
         ),
     )
     return Container(identity=identity, engine=engine)
+
+
+def build_knowledge_service() -> KnowledgeService:
+    return KnowledgeService(
+        {
+            DocumentFormat.PDF: PdfParser(),
+            DocumentFormat.DOCX: DocxParser(),
+            DocumentFormat.MARKDOWN: MarkdownParser(),
+            DocumentFormat.TEXT: PlainTextParser(),
+        }
+    )
