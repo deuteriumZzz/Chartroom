@@ -116,3 +116,25 @@ async def test_provider_outage_is_reported_then_retried(world: World) -> None:
 async def test_missing_version_is_a_no_op(world: World) -> None:
     await world.indexer.index(999)
     assert world.store.versions == {} and world.index.points == {}
+
+
+async def test_unexpected_error_never_leaves_version_stuck_in_indexing(world: World) -> None:
+    class BrokenIndex(InMemoryChunkIndex):
+        async def ensure_collection(self, dimensions: int) -> None:
+            raise RuntimeError("collection has another vector size")
+
+    world.indexer = Indexer(
+        lambda: InMemoryKnowledgeUnitOfWork(world.store),
+        build_document_chunker(),
+        world.embedder,
+        BrokenIndex(),
+    )
+    version_id = await world.upload("3", date(2026, 9, 1))
+    with pytest.raises(RuntimeError):
+        await world.indexer.index(version_id)
+    version = world.store.versions[version_id]
+    # Наружу — нейтральный текст: детали ошибки остаются в логах worker, а не в API.
+    assert (version.status, version.error) == (
+        IndexingStatus.FAILED,
+        "Internal error during indexing",
+    )

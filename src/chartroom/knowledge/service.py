@@ -117,6 +117,10 @@ class Indexer:
             # Причина видна в API сразу; worker повторит задачу, и при успехе статус сменится.
             await self.mark_failed(version_id, str(e))
             raise
+        except Exception:
+            # Что бы ни случилось, версия не должна навсегда остаться в статусе indexing.
+            await self.mark_failed(version_id, "Internal error during indexing")
+            raise
 
         async with self._uow_factory() as uow:
             await uow.chunks.replace(version_id, indexed)
