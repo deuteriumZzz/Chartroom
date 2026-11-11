@@ -26,3 +26,7 @@ class ConflictError(DomainError):
 
 class InvalidInputError(DomainError):
     pass
+
+
+class NotFoundError(DomainError):
+    pass
