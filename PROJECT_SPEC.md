@@ -1,7 +1,7 @@
 # ТЗ: Chartroom
 
 Демонстрационный backend-проект «ассистент по судовым процедурам и отчётам».
-Автор ТЗ: роль «архитектор + старший разработчик». Статус: согласовано, в работе (дни 1–6 выполнены).
+Автор ТЗ: роль «архитектор + старший разработчик». Статус: согласовано, в работе (дни 1–7 выполнены).
 
 ---
 
@@ -122,10 +122,10 @@ client (HTTP: HTMX UI / Swagger · CLI)
 `documents(id, title, title_key, language)` ·
 `document_versions(id, document_id, label, issued_on, filename, checksum, content, status, error, is_active, uploaded_at)` — статус индексации хранится у версии (ADR-005) ·
 `chunks(id, version_id, chunk_index, section_path, page, text_hash, qdrant_id)` ·
-`queries(id, user_id, mode, question, language, answer, refusal, latency_ms, model, prompt_version, created_at)` ·
-`citations(id, query_id, chunk_id, quote)` ·
+`queries(id, user_id, question, language, answer, refusal, citation_warning, latency_ms, model, prompt_version, created_at)` — `mode` добавится с агентом (ADR-008) ·
+`citations(id, query_id, position, document_id, version_id, title, section_path, page, quote)` — без внешних ключей на документы, чтобы журнал переживал удаление ·
 `tool_calls(id, query_id, step, name, args_json, ok, latency_ms)` ·
-`feedback(id, query_id, useful, comment)` ·
+`feedback(query_id, useful, comment, created_at)` — один отзыв на ответ ·
 `report_templates(id, name, schema_json, version)` ·
 `reports(id, template_id, user_id, source_text, data_json, status)` ·
 `report_issues(id, report_id, field, message)` ·
@@ -211,7 +211,7 @@ chartroom/
 | 4 ✅ | Эмбеддинги (Gemini), Qdrant (dense + BM25), индексация через Celery, загрузка и статус по API, засев корпуса, ADR-005 |
 | 5 ✅ | Гибридный поиск (dense + BM25, RRF) по активным версиям, модуль `qa`, `/ask` без генерации, ADR-006 |
 | 6 ✅ | Генерация (Gemini, structured output), отказ по сходству и самой моделью, цитаты, язык ответа, промпт в файле, ADR-007 |
-| 7 | Валидатор цитат, аудит запросов, обратная связь |
+| 7 ✅ | Проверка цитат (FR-6, промпт v2), журнал запросов, `GET /queries` по ролям, отзывы (FR-7), ADR-008 |
 | 8 | Золотой набор и `make eval`, первые метрики |
 | 9 | Улучшение поиска по результатам eval (чанкинг, реранкинг), повторный замер |
 | 10 | M2: шаблоны и извлечение отчётов, валидация |
