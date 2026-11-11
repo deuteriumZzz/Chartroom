@@ -22,6 +22,8 @@ dev = [
     "httpx>=0.27",
     "ruff>=0.8",
     "mypy>=1.13",
+    "import-linter>=2.16",
+    "pytest-cov>=7.1.0",
 ]
 
 [build-system]
@@ -42,6 +44,32 @@ select = ["E", "F", "I", "UP", "B", "ASYNC"]
 strict = true
 files = ["src", "tests"]
 plugins = ["pydantic.mypy"]
+
+[tool.importlinter]
+root_package = "chartroom"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Слои модуля: api и adapters -> service -> ports -> domain"
+type = "layers"
+containers = ["chartroom.identity"]
+layers = ["api | adapters", "service", "ports", "domain"]
+
+[[tool.importlinter.contracts]]
+name = "Ядро модуля не зависит от фреймворков и инфраструктуры"
+type = "forbidden"
+source_modules = ["chartroom.identity.domain", "chartroom.identity.ports", "chartroom.identity.service"]
+forbidden_modules = ["fastapi", "pydantic", "sqlalchemy", "jwt", "pwdlib", "chartroom.shared.database", "chartroom.shared.config"]
+
+[tool.coverage.run]
+source = ["chartroom"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+fail_under = 95
+exclude_also = ['if __name__ == "__main__":']
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
