@@ -1,6 +1,9 @@
 FROM python:3.12-slim
 COPY --from=ghcr.io/astral-sh/uv:0.11 /uv /usr/local/bin/uv
 WORKDIR /app
+# Байткод компилируется при сборке: процесс от непривилегированного пользователя не может
+# записать .pyc в .venv и иначе компилировал бы зависимости при каждом старте.
+ENV UV_COMPILE_BYTECODE=1
 
 # Сначала только зависимости: слой кешируется, пока не меняется uv.lock.
 COPY pyproject.toml uv.lock ./
