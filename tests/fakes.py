@@ -236,7 +236,8 @@ class InMemoryChunkIndex:
         version_ids: Sequence[int],
         limit: int,
     ) -> list[RetrievedChunk]:
-        """Упрощённое ранжирование по числу общих терминов; настоящее слияние RRF — в Qdrant."""
+        """Упрощённое ранжирование по числу общих терминов; настоящее слияние RRF — в Qdrant.
+        Сходство — доля терминов вопроса, найденных во фрагменте."""
         candidates = [p for p in self.points.values() if p.version_id in version_ids]
         scored = [(len(set(p.sparse.indices) & set(sparse.indices)), p) for p in candidates]
         scored.sort(key=lambda item: (-item[0], item[1].version_id, item[1].chunk.index))
@@ -251,6 +252,7 @@ class InMemoryChunkIndex:
                 p.chunk.index,
                 p.chunk.text,
                 float(score),
+                score / max(len(sparse.indices), 1),
             )
             for score, p in scored[:limit]
         ]

@@ -9,7 +9,7 @@ from chartroom.qa.domain import (
 from chartroom.qa.service import QuestionService
 from tests.fakes import StaticPassageRetriever
 
-PASSAGE = Passage(1, 7, "Fire", "Fire / 4.4 Engine room", None, "Close the fuel valves.", 0.9)
+PASSAGE = Passage(1, 7, "Fire", "Fire / 4.4 Engine room", None, "Close the fuel valves.", 0.9, 0.82)
 
 
 def test_question_is_normalized_and_bounded() -> None:

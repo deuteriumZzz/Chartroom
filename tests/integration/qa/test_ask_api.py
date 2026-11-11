@@ -14,8 +14,8 @@ from tests.fakes import RecordingQueue, StaticPassageRetriever
 
 PASSWORD = "s3cret-pass"
 PASSAGES = [
-    Passage(1, 7, "Fire", "Fire / 4.4 Engine room", 3, "Close the fuel valves.", 0.031),
-    Passage(1, 7, "Fire", "Fire / 4.2 Alarm", None, "Sound the general alarm.", 0.016),
+    Passage(1, 7, "Fire", "Fire / 4.4 Engine room", 3, "Close the fuel valves.", 0.031, 0.81),
+    Passage(1, 7, "Fire", "Fire / 4.2 Alarm", None, "Sound the general alarm.", 0.016, 0.64),
 ]
 
 

@@ -50,4 +50,5 @@ class RetrievedChunk:
     page: int | None
     chunk_index: int
     text: str
-    score: float
+    score: float  # итоговая оценка RRF: только порядок, не мера близости
+    similarity: float  # косинусное сходство с вопросом (dense) — мера близости для отказа

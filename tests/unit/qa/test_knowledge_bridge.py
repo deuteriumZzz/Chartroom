@@ -38,4 +38,5 @@ async def test_knowledge_chunks_become_qa_passages() -> None:
         page=None,
         text="Close the fuel valves.",
         score=passage.score,
+        similarity=1.0,
     )

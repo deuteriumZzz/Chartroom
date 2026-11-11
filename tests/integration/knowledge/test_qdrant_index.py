@@ -3,6 +3,7 @@ import math
 import os
 import uuid
 from collections.abc import AsyncIterator
+from dataclasses import replace
 
 import pytest
 from qdrant_client import AsyncQdrantClient, models
@@ -146,6 +147,23 @@ async def test_hybrid_search_ranks_keyword_match_within_active_versions(
         None,
     )
     assert found[0].score >= found[-1].score
+    assert found[0].similarity == pytest.approx(
+        1.0
+    )  # вопрос и фрагменты — один и тот же dense-вектор
+
+
+async def test_similarity_measures_closeness_to_the_question(index: QdrantChunkIndex) -> None:
+    await index.ensure_collection(3)
+    chunks = _version(1, ["Close the fuel valves.", "Sound the general alarm."])
+    close, far = (
+        replace(chunks[0], dense=(1.0, 0.0, 0.0)),
+        replace(chunks[1], dense=(0.0, 1.0, 0.0)),
+    )
+    await index.upsert([close, far])
+    found = await index.search((2.0, 0.2, 0.0), SparseVector((), ()), [1], limit=5)
+    similarity = {chunk.text: chunk.similarity for chunk in found}
+    assert similarity["Close the fuel valves."] == pytest.approx(2 / math.sqrt(4.04), rel=1e-3)
+    assert similarity["Sound the general alarm."] == pytest.approx(0.2 / math.sqrt(4.04), rel=1e-3)
 
 
 async def test_question_without_words_uses_dense_search_only(index: QdrantChunkIndex) -> None:

@@ -23,7 +23,8 @@ class Passage:
     section_path: str
     page: int | None
     text: str
-    score: float
+    score: float  # порядок в выдаче (RRF)
+    similarity: float  # близость к вопросу (cosine), по ней решается отказ
 
 
 def normalize_question(raw: str) -> str:

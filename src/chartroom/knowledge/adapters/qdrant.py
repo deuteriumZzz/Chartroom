@@ -1,3 +1,4 @@
+import math
 from collections.abc import Sequence
 from typing import Any
 
@@ -112,10 +113,15 @@ class QdrantChunkIndex:
                 query=models.FusionQuery(fusion=models.Fusion.RRF),
                 limit=limit,
                 with_payload=True,
+                with_vectors=[DENSE_VECTOR],
             )
         except (UnexpectedResponse, ResponseHandlingException) as e:
             raise ServiceUnavailableError(_UNAVAILABLE) from e
-        return [_retrieved(point.payload or {}, point.score) for point in response.points]
+        query = _normalized(dense)
+        return [
+            _retrieved(point.payload or {}, point.score, _cosine(query, point.vector))
+            for point in response.points
+        ]
 
     async def _create(self, dimensions: int) -> None:
         try:
@@ -138,7 +144,18 @@ class QdrantChunkIndex:
         )
 
 
-def _retrieved(payload: dict[str, Any], score: float) -> RetrievedChunk:
+def _normalized(vector: Sequence[float]) -> list[float]:
+    norm = math.sqrt(sum(x * x for x in vector)) or 1.0
+    return [x / norm for x in vector]
+
+
+def _cosine(query: list[float], stored: Any) -> float:
+    # Qdrant хранит векторы cosine-коллекции нормализованными: сходство — скалярное произведение.
+    vector: list[float] = stored[DENSE_VECTOR]  # запрошен with_vectors=[DENSE_VECTOR]
+    return float(sum(q * v for q, v in zip(query, vector, strict=True)))
+
+
+def _retrieved(payload: dict[str, Any], score: float, similarity: float) -> RetrievedChunk:
     return RetrievedChunk(
         document_id=payload["document_id"],
         version_id=payload["version_id"],
@@ -149,4 +166,5 @@ def _retrieved(payload: dict[str, Any], score: float) -> RetrievedChunk:
         chunk_index=payload["chunk_index"],
         text=payload["text"],
         score=score,
+        similarity=similarity,
     )

@@ -21,6 +21,7 @@ class KnowledgePassageRetriever:
                 page=chunk.page,
                 text=chunk.text,
                 score=chunk.score,
+                similarity=chunk.similarity,
             )
             for chunk in await self._retriever.retrieve(question, limit)
         ]
