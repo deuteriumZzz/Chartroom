@@ -10,9 +10,9 @@ lint:
 	uv run mypy
 	uv run lint-imports
 
-# Интеграционным тестам нужен Postgres; они работают в отдельной БД chartroom_test.
+# Интеграционным тестам нужны Postgres (отдельная БД chartroom_test) и Qdrant.
 test:
-	docker compose up -d --wait db
+	docker compose up -d --wait db qdrant
 	uv run pytest --cov
 
 # make user EMAIL=admin@ship.test ROLE=admin  (пароль спросит интерактивно)
