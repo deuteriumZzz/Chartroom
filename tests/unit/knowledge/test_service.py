@@ -1,13 +1,13 @@
 import pytest
 
-from chartroom.bootstrap import build_knowledge_service
+from chartroom.bootstrap import build_document_chunker
 from chartroom.knowledge.domain.models import (
     Block,
     DocumentFormat,
     EmptyDocumentError,
     UnsupportedFormatError,
 )
-from chartroom.knowledge.service import KnowledgeService
+from chartroom.knowledge.service import DocumentChunker
 from tests.unit.knowledge.test_parsers import _docx_bytes, _pdf_bytes
 
 
@@ -20,7 +20,7 @@ class FakeParser:
 
 
 def test_chunk_parses_by_detected_format_and_splits() -> None:
-    service = KnowledgeService(
+    service = DocumentChunker(
         {DocumentFormat.MARKDOWN: FakeParser([Block("Text.", ("Fire", "1. Purpose"))])}
     )
     [chunk] = service.chunk("fire.md", b"# ignored by fake")
@@ -28,14 +28,14 @@ def test_chunk_parses_by_detected_format_and_splits() -> None:
 
 
 def test_document_without_text_is_rejected() -> None:
-    service = KnowledgeService({DocumentFormat.TEXT: FakeParser([])})
+    service = DocumentChunker({DocumentFormat.TEXT: FakeParser([])})
     with pytest.raises(EmptyDocumentError):
         service.chunk("empty.txt", b"")
 
 
 def test_unsupported_format_is_rejected_before_parsing() -> None:
     with pytest.raises(UnsupportedFormatError):
-        KnowledgeService({}).chunk("setup.exe", b"MZ")
+        DocumentChunker({}).chunk("setup.exe", b"MZ")
 
 
 @pytest.mark.parametrize(
@@ -48,4 +48,4 @@ def test_unsupported_format_is_rejected_before_parsing() -> None:
     ],
 )
 def test_default_service_handles_every_format(filename: str, content: bytes) -> None:
-    assert build_knowledge_service().chunk(filename, content)
+    assert build_document_chunker().chunk(filename, content)

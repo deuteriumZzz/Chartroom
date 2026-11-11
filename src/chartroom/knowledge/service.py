@@ -10,8 +10,8 @@ from chartroom.knowledge.domain.models import (
 from chartroom.knowledge.ports import DocumentParser
 
 
-class KnowledgeService:
-    """Сценарии модуля knowledge: подготовка документа к индексации."""
+class DocumentChunker:
+    """Разбор документа и нарезка на фрагменты: формат по сигнатуре, затем нужный парсер."""
 
     def __init__(self, parsers: Mapping[DocumentFormat, DocumentParser]) -> None:
         self._parsers = parsers

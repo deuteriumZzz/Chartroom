@@ -13,7 +13,7 @@ import sys
 import textwrap
 from collections.abc import Sequence
 
-from chartroom.bootstrap import build_container, build_knowledge_service
+from chartroom.bootstrap import build_container, build_document_chunker
 from chartroom.identity.domain import Role, User
 from chartroom.shared.config import get_settings
 from chartroom.shared.errors import DomainError
@@ -35,7 +35,7 @@ def _create_user(email: str, role: Role) -> None:
 
 
 def _show_chunks(path: pathlib.Path) -> None:
-    chunks = build_knowledge_service().chunk(path.name, path.read_bytes())
+    chunks = build_document_chunker().chunk(path.name, path.read_bytes())
     print(f"{path}: {len(chunks)} chunks")
     for chunk in chunks:
         page = "-" if chunk.page is None else str(chunk.page)

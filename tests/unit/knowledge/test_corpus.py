@@ -4,7 +4,7 @@ import pathlib
 
 import pytest
 
-from chartroom.bootstrap import build_knowledge_service
+from chartroom.bootstrap import build_document_chunker
 from chartroom.knowledge.domain.chunking import MAX_CHUNK_TOKENS
 
 CORPUS = pathlib.Path(__file__).resolve().parents[3] / "data" / "corpus"
@@ -34,6 +34,6 @@ def test_corpus_document_is_well_formed(path: pathlib.Path) -> None:
     share = _cyrillic_share(text)
     assert share > 0.6 if language == "ru" else share < 0.01
 
-    chunks = build_knowledge_service().chunk(path.name, path.read_bytes())
+    chunks = build_document_chunker().chunk(path.name, path.read_bytes())
     assert len({chunk.section_path for chunk in chunks}) >= 4
     assert all(chunk.token_count <= MAX_CHUNK_TOKENS for chunk in chunks)

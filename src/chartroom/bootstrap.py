@@ -21,7 +21,7 @@ from chartroom.knowledge.adapters.parsers import (
     PlainTextParser,
 )
 from chartroom.knowledge.domain.models import DocumentFormat
-from chartroom.knowledge.service import KnowledgeService
+from chartroom.knowledge.service import DocumentChunker
 from chartroom.shared.config import Settings
 
 
@@ -54,8 +54,8 @@ def build_container(
     return Container(identity=identity, engine=engine)
 
 
-def build_knowledge_service() -> KnowledgeService:
-    return KnowledgeService(
+def build_document_chunker() -> DocumentChunker:
+    return DocumentChunker(
         {
             DocumentFormat.PDF: PdfParser(),
             DocumentFormat.DOCX: DocxParser(),
