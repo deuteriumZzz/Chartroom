@@ -23,7 +23,6 @@ from chartroom.knowledge.domain.models import (
     safe_filename,
     should_activate,
 )
-from chartroom.knowledge.domain.sparse import bm25_vector
 from chartroom.knowledge.ports import (
     ChunkIndex,
     DocumentParser,
@@ -32,6 +31,7 @@ from chartroom.knowledge.ports import (
     KnowledgeUnitOfWork,
 )
 from chartroom.shared.errors import DomainError, ServiceUnavailableError
+from chartroom.shared.sparse import bm25_vector
 
 UowFactory = Callable[[], KnowledgeUnitOfWork]
 

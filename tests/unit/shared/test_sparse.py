@@ -1,4 +1,4 @@
-from chartroom.knowledge.domain.sparse import bm25_vector, term_id
+from chartroom.shared.sparse import bm25_query_vector, bm25_vector, term_id
 
 
 def _weights(text: str) -> dict[int, float]:
@@ -30,3 +30,11 @@ def test_vector_is_deterministic_sorted_and_handles_cyrillic() -> None:
     assert list(vector.indices) == sorted(vector.indices)
     assert term_id("пожар") in vector.indices
     assert bm25_vector("  ...  ").indices == ()
+
+
+def test_query_vector_matches_document_terms_with_unit_weights() -> None:
+    query = bm25_query_vector("Fire! fire alarm")
+    assert query.indices == tuple(sorted({term_id("fire"), term_id("alarm")}))
+    assert query.values == (1.0, 1.0)
+    # Те же термины, что и у документа: иначе лексический поиск ничего бы не нашёл.
+    assert set(query.indices) <= set(bm25_vector("FIRE alarm sounded").indices)

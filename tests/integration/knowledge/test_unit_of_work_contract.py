@@ -19,8 +19,8 @@ from chartroom.knowledge.domain.models import (
     IndexingStatus,
     Language,
 )
-from chartroom.knowledge.domain.sparse import bm25_vector
 from chartroom.knowledge.ports import KnowledgeUnitOfWork
+from chartroom.shared.sparse import bm25_vector
 from tests.fakes import InMemoryKnowledgeUnitOfWork, KnowledgeStore
 
 UowFactory = Callable[[], KnowledgeUnitOfWork]

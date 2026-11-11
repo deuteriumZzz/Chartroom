@@ -1,6 +1,9 @@
-"""Sparse-вектор фрагмента для лексического поиска (BM25).
+"""Sparse-векторы для лексического поиска (BM25) — общий контракт индексации и поиска.
 
-Здесь только частотная часть BM25 — насыщение и нормализация по длине. IDF считает Qdrant
+Документ и запрос обязаны кодироваться одной функцией разбиения на термины, иначе термины
+не совпадут; поэтому код лежит в общем ядре, а не в одном из модулей.
+
+Для документа — только частотная часть BM25 — насыщение и нормализация по длине. IDF считает Qdrant
 по всей коллекции (sparse-вектор с modifier=IDF), поэтому он всегда актуален и не требует
 пересчёта при добавлении документов.
 """
@@ -38,3 +41,9 @@ def bm25_vector(text: str) -> SparseVector:
         weights[term_id(term)] += frequency * (K1 + 1) / (frequency + K1 * length_norm)
     indices = tuple(sorted(weights))
     return SparseVector(indices, tuple(weights[i] for i in indices))
+
+
+def bm25_query_vector(text: str) -> SparseVector:
+    """Вектор запроса: каждый уникальный термин с весом 1, IDF домножает Qdrant."""
+    indices = tuple(sorted({term_id(word.lower()) for word in _WORD.findall(text)}))
+    return SparseVector(indices, tuple(1.0 for _ in indices))

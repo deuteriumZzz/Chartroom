@@ -4,7 +4,7 @@ import uuid
 from dataclasses import dataclass
 
 from chartroom.knowledge.domain.models import Chunk, Language
-from chartroom.knowledge.domain.sparse import SparseVector
+from chartroom.shared.sparse import SparseVector
 
 _POINT_NAMESPACE = uuid.UUID("6d1f3c2a-8a51-4f5e-9a57-2b0c6f1e9d40")
 
