@@ -1,6 +1,7 @@
 import os
 
 # Окружение задаётся до первого get_settings(): Settings кешируется (lru_cache).
+os.environ.setdefault("JWT_SECRET", "test-only-secret-not-used-anywhere-else-0123456789")
 os.environ["DATABASE_URL"] = os.environ.get(
     "TEST_DATABASE_URL",
     "postgresql+asyncpg://chartroom:chartroom@localhost:5432/chartroom_test",
