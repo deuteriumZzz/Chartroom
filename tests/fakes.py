@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from typing import Self
 
 from chartroom.identity.domain import EmailAlreadyRegisteredError, Role, User
-from chartroom.knowledge.domain.indexing import IndexedChunk
+from chartroom.knowledge.domain.indexing import IndexedChunk, RetrievedChunk
 from chartroom.knowledge.domain.models import (
     Document,
     DocumentAlreadyExistsError,
@@ -20,6 +20,7 @@ from chartroom.knowledge.domain.models import (
     Language,
 )
 from chartroom.shared.errors import ServiceUnavailableError
+from chartroom.shared.sparse import SparseVector
 
 
 class InMemoryUserRepository:
@@ -159,6 +160,9 @@ class InMemoryVersionRepository:
         for version in await self.list_for(document_id):
             self._store.versions[version.id] = replace(version, is_active=version.id == version_id)
 
+    async def active_ids(self) -> list[int]:
+        return sorted(v.id for v in self._store.versions.values() if v.is_active)
+
 
 class InMemoryChunkRepository:
     def __init__(self, store: KnowledgeStore) -> None:
@@ -199,6 +203,7 @@ class FakeEmbedder:
 
     def __init__(self) -> None:
         self.calls: list[list[str]] = []
+        self.queries: list[str] = []
         self.unavailable = False
 
     async def embed_documents(self, texts: Sequence[str]) -> list[list[float]]:
@@ -206,6 +211,10 @@ class FakeEmbedder:
             raise ServiceUnavailableError("Embedding provider is unavailable")
         self.calls.append(list(texts))
         return [[float(len(text)), 1.0, 0.0] for text in texts]
+
+    async def embed_query(self, text: str) -> list[float]:
+        self.queries.append(text)
+        return [float(len(text)), 1.0, 0.0]
 
 
 class InMemoryChunkIndex:
@@ -218,6 +227,32 @@ class InMemoryChunkIndex:
 
     async def upsert(self, chunks: Sequence[IndexedChunk]) -> None:
         self.points.update((chunk.point_id, chunk) for chunk in chunks)
+
+    async def search(
+        self,
+        dense: Sequence[float],
+        sparse: SparseVector,
+        version_ids: Sequence[int],
+        limit: int,
+    ) -> list[RetrievedChunk]:
+        """Упрощённое ранжирование по числу общих терминов; настоящее слияние RRF — в Qdrant."""
+        candidates = [p for p in self.points.values() if p.version_id in version_ids]
+        scored = [(len(set(p.sparse.indices) & set(sparse.indices)), p) for p in candidates]
+        scored.sort(key=lambda item: (-item[0], item[1].version_id, item[1].chunk.index))
+        return [
+            RetrievedChunk(
+                p.document_id,
+                p.version_id,
+                p.title,
+                p.language,
+                p.chunk.section_path,
+                p.chunk.page,
+                p.chunk.index,
+                p.chunk.text,
+                float(score),
+            )
+            for score, p in scored[:limit]
+        ]
 
 
 class RecordingQueue:

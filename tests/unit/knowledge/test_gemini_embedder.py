@@ -63,3 +63,10 @@ async def test_provider_failures_become_service_unavailable(failure: Exception) 
 async def test_incomplete_response_is_rejected() -> None:
     with pytest.raises(ServiceUnavailableError, match="incomplete"):
         await _embedder(StubModels(drop_last=True)).embed_documents(["a", "b"])
+
+
+async def test_query_is_embedded_as_retrieval_query() -> None:
+    models = StubModels()
+    assert await _embedder(models).embed_query("fire") == [4.0, 0.5]
+    _, contents, config = models.calls[0]
+    assert (contents, config.task_type) == (["fire"], "RETRIEVAL_QUERY")

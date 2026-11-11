@@ -11,7 +11,7 @@ DEFAULT_BATCH_SIZE = 100
 
 
 class GeminiEmbedder:
-    """Эмбеддинги фрагментов через Gemini API (task_type=RETRIEVAL_DOCUMENT)."""
+    """Эмбеддинги через Gemini API: фрагменты — RETRIEVAL_DOCUMENT, вопросы — RETRIEVAL_QUERY."""
 
     def __init__(
         self,
@@ -30,8 +30,15 @@ class GeminiEmbedder:
         return self._dimensions
 
     async def embed_documents(self, texts: Sequence[str]) -> list[list[float]]:
+        return await self._embed(texts, "RETRIEVAL_DOCUMENT")
+
+    async def embed_query(self, text: str) -> list[float]:
+        [vector] = await self._embed([text], "RETRIEVAL_QUERY")
+        return vector
+
+    async def _embed(self, texts: Sequence[str], task_type: str) -> list[list[float]]:
         config = types.EmbedContentConfig(
-            task_type="RETRIEVAL_DOCUMENT", output_dimensionality=self._dimensions
+            task_type=task_type, output_dimensionality=self._dimensions
         )
         vectors: list[list[float]] = []
         for start in range(0, len(texts), self._batch_size):
@@ -47,3 +54,10 @@ class GeminiEmbedder:
                 raise ServiceUnavailableError("Embedding provider returned an incomplete response")
             vectors.extend(list(v) for v in values if v)
         return vectors
+
+
+class UnconfiguredQueryEmbedder:
+    """Подставляется в API без GEMINI_API_KEY: загрузка документов работает, поиск отвечает 503."""
+
+    async def embed_query(self, text: str) -> list[float]:
+        raise ServiceUnavailableError("Embedding provider is not configured")

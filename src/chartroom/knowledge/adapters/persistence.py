@@ -224,6 +224,14 @@ class SqlVersionRepository:
             .values(is_active=True)
         )
 
+    async def active_ids(self) -> list[int]:
+        ids = await self._session.scalars(
+            select(DocumentVersionRecord.id)
+            .where(DocumentVersionRecord.is_active)
+            .order_by(DocumentVersionRecord.id)
+        )
+        return list(ids)
+
 
 class SqlChunkRepository:
     def __init__(self, session: AsyncSession) -> None:

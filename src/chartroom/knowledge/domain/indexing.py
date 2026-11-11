@@ -36,3 +36,18 @@ class IndexedChunk:
     chunk: Chunk
     dense: tuple[float, ...]
     sparse: SparseVector
+
+
+@dataclass(frozen=True, slots=True)
+class RetrievedChunk:
+    """Найденный фрагмент с данными для цитаты: документ, версия, раздел, страница."""
+
+    document_id: int
+    version_id: int
+    title: str
+    language: Language
+    section_path: str
+    page: int | None
+    chunk_index: int
+    text: str
+    score: float

@@ -102,6 +102,7 @@ async def test_versions_lifecycle(uow_factory: UowFactory) -> None:
     async with uow_factory() as uow:
         versions = {v.label: v for v in await uow.versions.list_for(document.id)}
         assert (versions["3"].error, versions["4"].is_active) == (None, True)
+        assert await uow.versions.active_ids() == [v4.id]
 
 
 @pytest.mark.parametrize(

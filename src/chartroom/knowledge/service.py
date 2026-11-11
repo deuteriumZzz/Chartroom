@@ -3,7 +3,12 @@ from collections.abc import Callable, Mapping
 from dataclasses import replace
 
 from chartroom.knowledge.domain.chunking import chunk_blocks
-from chartroom.knowledge.domain.indexing import IndexedChunk, chunk_point_id, embedding_input
+from chartroom.knowledge.domain.indexing import (
+    IndexedChunk,
+    RetrievedChunk,
+    chunk_point_id,
+    embedding_input,
+)
 from chartroom.knowledge.domain.models import (
     MAX_UPLOAD_BYTES,
     Chunk,
@@ -25,13 +30,15 @@ from chartroom.knowledge.domain.models import (
 )
 from chartroom.knowledge.ports import (
     ChunkIndex,
+    ChunkSearch,
     DocumentParser,
     Embedder,
     IndexingQueue,
     KnowledgeUnitOfWork,
+    QueryEmbedder,
 )
 from chartroom.shared.errors import DomainError, ServiceUnavailableError
-from chartroom.shared.sparse import bm25_vector
+from chartroom.shared.sparse import bm25_query_vector, bm25_vector
 
 UowFactory = Callable[[], KnowledgeUnitOfWork]
 
@@ -163,3 +170,22 @@ class Indexer:
         await self._index.ensure_collection(self._embedder.dimensions)
         await self._index.upsert(indexed)
         return indexed
+
+
+class ChunkRetriever:
+    """Гибридный поиск фрагментов (dense + BM25) только среди активных версий документов."""
+
+    def __init__(
+        self, uow_factory: UowFactory, embedder: QueryEmbedder, index: ChunkSearch
+    ) -> None:
+        self._uow_factory = uow_factory
+        self._embedder = embedder
+        self._index = index
+
+    async def retrieve(self, query: str, limit: int) -> list[RetrievedChunk]:
+        async with self._uow_factory() as uow:
+            version_ids = await uow.versions.active_ids()
+        if not version_ids:
+            return []  # ничего не проиндексировано — провайдер эмбеддингов не вызываем
+        dense = await self._embedder.embed_query(query)
+        return await self._index.search(dense, bm25_query_vector(query), version_ids, limit)
