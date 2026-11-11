@@ -30,3 +30,11 @@ class InvalidInputError(DomainError):
 
 class NotFoundError(DomainError):
     pass
+
+
+class ServiceUnavailableError(Exception):
+    """Внешний сервис (провайдер эмбеддингов, векторное хранилище, очередь) недоступен.
+
+    Не бизнес-ошибка и не наследник DomainError: обычно временная, операцию можно повторить.
+    Текст задаёт адаптер и показывает клиенту — в нём нет деталей инфраструктуры.
+    """

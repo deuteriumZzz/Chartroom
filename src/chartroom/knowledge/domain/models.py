@@ -53,6 +53,10 @@ class InvalidTitleError(InvalidInputError):
     message = "Document title is required"
 
 
+class InvalidVersionLabelError(InvalidInputError):
+    message = "Version label is required"
+
+
 class DocumentNotFoundError(NotFoundError):
     message = "Document not found"
 
@@ -63,6 +67,11 @@ class DuplicateVersionError(ConflictError):
 
 class DuplicateFileError(ConflictError):
     message = "This file is already uploaded for the document"
+
+
+class DocumentAlreadyExistsError(ConflictError):
+    # Две одновременные загрузки нового документа с одним названием: вторая получает конфликт.
+    message = "Document was created by a concurrent upload, retry"
 
 
 @dataclass(frozen=True, slots=True)
@@ -130,11 +139,24 @@ class DocumentUpload:
     content: bytes
 
 
+@dataclass(frozen=True, slots=True)
+class DocumentOverview:
+    document: Document
+    versions: list[DocumentVersion]
+
+
 def normalize_title(raw: str) -> str:
     title = " ".join(raw.split())
     if not title:
         raise InvalidTitleError
     return title
+
+
+def normalize_label(raw: str) -> str:
+    label = raw.strip()
+    if not label:
+        raise InvalidVersionLabelError
+    return label
 
 
 def ensure_new_version(existing: Sequence[DocumentVersion], label: str, checksum: str) -> None:
