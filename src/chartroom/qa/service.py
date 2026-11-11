@@ -2,9 +2,9 @@ from chartroom.qa.domain import (
     DEFAULT_TOP_K,
     Answer,
     RefusalPolicy,
-    cited,
     detect_language,
     normalize_question,
+    verify_citations,
 )
 from chartroom.qa.ports import AnswerGenerator, PassageRetriever
 
@@ -26,7 +26,8 @@ class QuestionService:
         if not self._policy.allows(passages):
             return Answer.refused(language)  # нечем подтвердить ответ — модель не вызываем
         generated = await self._generator.generate(question, language, passages)
-        citations = cited(generated, passages)
+        citations, warning = verify_citations(generated.citations, passages)
         if generated.refusal or not citations:
-            return Answer.refused(language)  # ответ без подтверждённой цитаты не показываем
-        return Answer(generated.text, language, refusal=False, citations=citations)
+            # Ответ без подтверждённой цитаты не показываем.
+            return Answer.refused(language, citation_warning=warning)
+        return Answer(generated.text, language, False, citations, citation_warning=warning)

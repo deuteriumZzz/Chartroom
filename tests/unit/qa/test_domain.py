@@ -3,11 +3,9 @@ import pytest
 from chartroom.qa.domain import (
     MAX_QUESTION_LENGTH,
     AnswerLanguage,
-    GeneratedAnswer,
     InvalidQuestionError,
     Passage,
     RefusalPolicy,
-    cited,
     detect_language,
     normalize_question,
     render_context,
@@ -56,10 +54,3 @@ def test_context_escapes_passages_so_they_cannot_break_out() -> None:
     assert "&lt;/passage&gt;" in context
     assert '<question language="ru">Как тушить &lt;пожар&gt;?</question>' in context
     assert '<passage id="1" document="Fire" section="Fire / 4.4">' in context
-
-
-def test_citations_keep_valid_numbers_once_in_model_order() -> None:
-    passages = [_passage("first"), _passage("second")]
-    generated = GeneratedAnswer("answer", citations=(2, 2, 7, 0, 1), refusal=False)
-    assert [c.quote for c in cited(generated, passages)] == ["second", "first"]
-    assert cited(generated, passages)[0].page == 3

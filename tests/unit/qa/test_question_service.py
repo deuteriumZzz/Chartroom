@@ -6,6 +6,7 @@ from chartroom.qa.domain import (
     GeneratedAnswer,
     InvalidQuestionError,
     Passage,
+    RawCitation,
     RefusalPolicy,
 )
 from chartroom.qa.service import QuestionService
@@ -15,7 +16,7 @@ from tests.fakes import ScriptedGenerator, StaticPassageRetriever
 POLICY = RefusalPolicy(min_similarity=0.6)
 VALVES = Passage(1, 7, "Fire", "Fire / 4.4 Engine room", None, "Close the fuel valves.", 0.03, 0.82)
 ALARM = Passage(1, 7, "Fire", "Fire / 4.2 Alarm", None, "Sound the general alarm.", 0.02, 0.64)
-GOOD = GeneratedAnswer("Close the fuel valves [1].", citations=(1,), refusal=False)
+GOOD = GeneratedAnswer("Close the fuel valves.", (RawCitation(1, "Close the fuel valves"),), False)
 
 
 def _service(
@@ -25,16 +26,17 @@ def _service(
     return QuestionService(retriever, generator, POLICY), retriever, generator
 
 
-async def test_answer_is_generated_from_passages_with_citations() -> None:
+async def test_answer_is_generated_from_passages_with_verified_citations() -> None:
     service, retriever, generator = _service([VALVES, ALARM])
     answer = await service.ask("  What to do with   fuel valves? ", top_k=2)
-    assert (answer.text, answer.refusal, answer.language) == (
-        "Close the fuel valves [1].",
+    assert (answer.text, answer.refusal, answer.language, answer.citation_warning) == (
+        "Close the fuel valves.",
         False,
         AnswerLanguage.EN,
+        False,
     )
     assert [(c.section_path, c.quote) for c in answer.citations] == [
-        ("Fire / 4.4 Engine room", "Close the fuel valves.")
+        ("Fire / 4.4 Engine room", "Close the fuel valves")
     ]
     assert retriever.calls == [("What to do with fuel valves?", 2)]
     assert generator.calls == [("What to do with fuel valves?", AnswerLanguage.EN, [VALVES, ALARM])]
@@ -56,19 +58,42 @@ async def test_refusal_without_calling_the_model(passages: list[Passage]) -> Non
 
 
 @pytest.mark.parametrize(
-    "generated",
+    ("generated", "warning"),
     [
-        GeneratedAnswer("", citations=(), refusal=True),
-        GeneratedAnswer("Unsupported claim.", citations=(), refusal=False),
-        GeneratedAnswer("Made-up source.", citations=(9,), refusal=False),
+        (GeneratedAnswer("", (), refusal=True), False),
+        (GeneratedAnswer("Unsupported claim.", (), refusal=False), False),
+        (GeneratedAnswer("Made up.", (RawCitation(9, "anything"),), refusal=False), True),
+        (
+            GeneratedAnswer("Misquoted.", (RawCitation(1, "Open the fuel valves"),), refusal=False),
+            True,
+        ),
     ],
 )
 async def test_model_refusal_or_unsupported_answer_becomes_refusal(
-    generated: GeneratedAnswer,
+    generated: GeneratedAnswer, warning: bool
 ) -> None:
     service, _, _ = _service([VALVES], generated)
     answer = await service.ask("fuel valves?")
-    assert (answer.refusal, answer.text) == (True, REFUSAL_TEXT[AnswerLanguage.EN])
+    assert (answer.refusal, answer.text, answer.citation_warning) == (
+        True,
+        REFUSAL_TEXT[AnswerLanguage.EN],
+        warning,
+    )
+
+
+async def test_invalid_citation_is_dropped_and_flagged_but_valid_ones_stay() -> None:
+    citations = (
+        RawCitation(1, "Close the fuel valves"),
+        RawCitation(2, "Sound the general alarm"),
+        RawCitation(5, "ghost"),
+    )
+    service, _, _ = _service([VALVES, ALARM], GeneratedAnswer("Valves, alarm.", citations, False))
+    answer = await service.ask("fire?")
+    assert (answer.refusal, answer.citation_warning) == (False, True)
+    assert [c.quote for c in answer.citations] == [
+        "Close the fuel valves",
+        "Sound the general alarm",
+    ]
 
 
 async def test_invalid_question_never_reaches_search() -> None:

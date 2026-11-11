@@ -13,6 +13,12 @@ class PassageRetriever(Protocol):
 
 
 class AnswerGenerator(Protocol):
+    @property
+    def model(self) -> str: ...
+
+    @property
+    def prompt_version(self) -> str: ...
+
     async def generate(
         self, question: str, language: AnswerLanguage, passages: Sequence[Passage]
     ) -> GeneratedAnswer:

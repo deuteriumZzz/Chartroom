@@ -1,6 +1,7 @@
 """Вопросы, ответы и цитаты. Чистые правила — без фреймворков и I/O."""
 
 import html
+import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import StrEnum
@@ -10,6 +11,7 @@ from chartroom.shared.errors import InvalidInputError
 MAX_QUESTION_LENGTH = 1000
 DEFAULT_TOP_K = 5
 MAX_TOP_K = 20
+_WORD = re.compile(r"\w+")
 # Доля кириллицы, начиная с которой вопрос считается русским: «Что такое ECDIS MOB?» — русский.
 _RUSSIAN_SHARE = 0.3
 
@@ -54,11 +56,19 @@ class Citation:
 
 
 @dataclass(frozen=True, slots=True)
+class RawCitation:
+    """Ссылка, как её вернула модель: номер фрагмента в контексте и дословная цитата."""
+
+    passage: int
+    quote: str
+
+
+@dataclass(frozen=True, slots=True)
 class GeneratedAnswer:
-    """Ответ модели как есть: текст, номера фрагментов-источников, признак отказа."""
+    """Ответ модели как есть: текст, непроверенные ссылки, признак отказа."""
 
     text: str
-    citations: tuple[int, ...]
+    citations: tuple[RawCitation, ...]
     refusal: bool
 
 
@@ -68,10 +78,11 @@ class Answer:
     language: AnswerLanguage
     refusal: bool
     citations: tuple[Citation, ...]
+    citation_warning: bool = False  # модель сослалась на то, чего нет в контексте (FR-6)
 
     @classmethod
-    def refused(cls, language: AnswerLanguage) -> "Answer":
-        return cls(REFUSAL_TEXT[language], language, refusal=True, citations=())
+    def refused(cls, language: AnswerLanguage, citation_warning: bool = False) -> "Answer":
+        return cls(REFUSAL_TEXT[language], language, True, (), citation_warning)
 
 
 @dataclass(frozen=True, slots=True)
@@ -120,10 +131,44 @@ def render_context(question: str, language: AnswerLanguage, passages: Sequence[P
     return "\n".join(lines)
 
 
-def cited(generated: GeneratedAnswer, passages: Sequence[Passage]) -> tuple[Citation, ...]:
-    """Номера фрагментов из ответа модели → цитаты. Номер вне контекста отбрасывается."""
-    numbers = dict.fromkeys(n for n in generated.citations if 1 <= n <= len(passages))
-    return tuple(
-        Citation(p.document_id, p.version_id, p.title, p.section_path, p.page, p.text)
-        for p in (passages[n - 1] for n in numbers)
-    )
+def _words(text: str) -> tuple[str, ...]:
+    return tuple(_WORD.findall(text.casefold()))
+
+
+def _contains(haystack: tuple[str, ...], needle: tuple[str, ...]) -> bool:
+    size = len(needle)
+    return any(haystack[i : i + size] == needle for i in range(len(haystack) - size + 1))
+
+
+def verify_citations(
+    raw: Sequence[RawCitation], passages: Sequence[Passage]
+) -> tuple[tuple[Citation, ...], bool]:
+    """FR-6: ссылка остаётся, только если указывает на переданный фрагмент и её цитата
+    дословно (по словам) в нём есть. Иначе ссылка удаляется, а ответ получает предупреждение.
+
+    Сравнение по последовательности слов: пунктуация, регистр и markdown не мешают,
+    а искажённая или чужая цитата не проходит.
+    """
+    citations: list[Citation] = []
+    seen: set[tuple[int, tuple[str, ...]]] = set()
+    warning = False
+    for item in raw:
+        quote = _words(item.quote)
+        passage = passages[item.passage - 1] if 1 <= item.passage <= len(passages) else None
+        if passage is None or not quote or not _contains(_words(passage.text), quote):
+            warning = True
+            continue
+        if (item.passage, quote) in seen:
+            continue
+        seen.add((item.passage, quote))
+        citations.append(
+            Citation(
+                passage.document_id,
+                passage.version_id,
+                passage.title,
+                passage.section_path,
+                passage.page,
+                item.quote.strip(),
+            )
+        )
+    return tuple(citations), warning

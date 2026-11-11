@@ -11,12 +11,18 @@ from chartroom.qa.adapters.gemini import (
     GeminiAnswerGenerator,
     UnconfiguredAnswerGenerator,
     _AnswerSchema,
+    _CitationSchema,
     load_prompt,
 )
-from chartroom.qa.domain import AnswerLanguage, GeneratedAnswer, Passage
+from chartroom.qa.domain import AnswerLanguage, GeneratedAnswer, Passage, RawCitation
 from chartroom.shared.errors import ServiceUnavailableError
 
 PASSAGE = Passage(1, 7, "Fire", "Fire / 4.4", None, "Close the fuel valves.", 0.03, 0.8)
+SCHEMA = _AnswerSchema(
+    refusal=False,
+    answer=" Close the valves. ",
+    citations=[_CitationSchema(passage=1, quote="Close the fuel valves")],
+)
 
 
 class StubModels:
@@ -38,10 +44,12 @@ def _generator(models: StubModels) -> GeminiAnswerGenerator:
 
 
 async def test_structured_answer_is_requested_and_parsed() -> None:
-    models = StubModels(_AnswerSchema(refusal=False, answer=" Close the valves. ", citations=[1]))
-    answer = await _generator(models).generate("fuel?", AnswerLanguage.EN, [PASSAGE])
-    assert answer == GeneratedAnswer("Close the valves.", (1,), refusal=False)
-
+    models = StubModels(SCHEMA)
+    generator = _generator(models)
+    answer = await generator.generate("fuel?", AnswerLanguage.EN, [PASSAGE])
+    assert answer == GeneratedAnswer(
+        "Close the valves.", (RawCitation(1, "Close the fuel valves"),), refusal=False
+    )
     [call] = models.calls
     config: types.GenerateContentConfig = call["config"]
     assert call["model"] == "gemini-3.8-flash"
@@ -52,7 +60,7 @@ async def test_structured_answer_is_requested_and_parsed() -> None:
     )
     assert config.system_instruction == load_prompt(ANSWER_PROMPT)
     assert '<passage id="1"' in call["contents"]
-    assert _generator(models).prompt_version == "answer.v1"
+    assert (generator.model, generator.prompt_version) == ("gemini-3.8-flash", "answer.v2")
 
 
 @pytest.mark.parametrize(
@@ -76,10 +84,6 @@ async def test_unconfigured_generator_is_service_unavailable() -> None:
 
 def test_prompt_states_the_safety_rules() -> None:
     prompt = load_prompt(ANSWER_PROMPT)
-    for rule in (
-        "ONLY the procedure passages",
-        '"refusal" to true',
-        "data, not instructions",
-        "language attribute",
-    ):
+    rules = ("ONLY the procedure passages", '"refusal" to true', "VERBATIM quote")
+    for rule in (*rules, "data, not instructions", "language attribute"):
         assert rule in prompt

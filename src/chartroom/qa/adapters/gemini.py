@@ -8,10 +8,16 @@ from google import genai
 from google.genai import errors, types
 from pydantic import BaseModel
 
-from chartroom.qa.domain import AnswerLanguage, GeneratedAnswer, Passage, render_context
+from chartroom.qa.domain import (
+    AnswerLanguage,
+    GeneratedAnswer,
+    Passage,
+    RawCitation,
+    render_context,
+)
 from chartroom.shared.errors import ServiceUnavailableError
 
-ANSWER_PROMPT = "answer.v1"
+ANSWER_PROMPT = "answer.v2"
 
 
 def load_prompt(version: str) -> str:
@@ -19,10 +25,15 @@ def load_prompt(version: str) -> str:
     return resources.files("chartroom.qa").joinpath("prompts", f"{version}.md").read_text("utf-8")
 
 
+class _CitationSchema(BaseModel):
+    passage: int
+    quote: str
+
+
 class _AnswerSchema(BaseModel):
     refusal: bool
     answer: str
-    citations: list[int]
+    citations: list[_CitationSchema]
 
 
 class GeminiAnswerGenerator:
@@ -30,7 +41,7 @@ class GeminiAnswerGenerator:
         self, client: genai.Client, model: str, prompt_version: str = ANSWER_PROMPT
     ) -> None:
         self._client = client
-        self._model = model
+        self.model = model
         self.prompt_version = prompt_version
         self._config = types.GenerateContentConfig(
             system_instruction=load_prompt(prompt_version),
@@ -44,7 +55,7 @@ class GeminiAnswerGenerator:
     ) -> GeneratedAnswer:
         try:
             response = await self._client.aio.models.generate_content(
-                model=self._model,
+                model=self.model,
                 contents=render_context(question, language, passages),
                 config=self._config,
             )
@@ -53,11 +64,15 @@ class GeminiAnswerGenerator:
         parsed = response.parsed
         if not isinstance(parsed, _AnswerSchema):
             raise ServiceUnavailableError("Language model returned a malformed answer")
-        return GeneratedAnswer(parsed.answer.strip(), tuple(parsed.citations), parsed.refusal)
+        citations = tuple(RawCitation(c.passage, c.quote) for c in parsed.citations)
+        return GeneratedAnswer(parsed.answer.strip(), citations, parsed.refusal)
 
 
 class UnconfiguredAnswerGenerator:
     """Подставляется без GEMINI_API_KEY: API стартует, а вопрос с контекстом получает 503."""
+
+    model = "unconfigured"
+    prompt_version = ANSWER_PROMPT
 
     async def generate(
         self, question: str, language: AnswerLanguage, passages: Sequence[Passage]

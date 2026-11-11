@@ -40,6 +40,7 @@ class AskResponse(BaseModel):
     answer: str
     language: AnswerLanguage
     refusal: bool
+    citation_warning: bool  # модель сослалась на то, чего не было в контексте; такие ссылки удалены
     citations: list[CitationResponse]
 
 
@@ -54,5 +55,6 @@ async def ask(request: AskRequest, _: OfficerUser, questions: QuestionsDep) -> A
         answer=answer.text,
         language=answer.language,
         refusal=answer.refusal,
+        citation_warning=answer.citation_warning,
         citations=[CitationResponse.model_validate(c) for c in answer.citations],
     )

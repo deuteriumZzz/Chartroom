@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from chartroom.bootstrap import Container, build_container
 from chartroom.identity.domain import Role
 from chartroom.main import create_app
-from chartroom.qa.domain import GeneratedAnswer, Passage
+from chartroom.qa.domain import GeneratedAnswer, Passage, RawCitation
 from chartroom.shared.config import get_settings
 from tests.fakes import RecordingQueue, ScriptedGenerator, StaticPassageRetriever
 
@@ -17,7 +17,11 @@ PASSAGES = [
     Passage(1, 7, "Fire", "Fire / 4.4 Engine room", 3, "Close the fuel valves.", 0.031, 0.81),
     Passage(1, 7, "Fire", "Fire / 4.2 Alarm", None, "Sound the general alarm.", 0.016, 0.64),
 ]
-ANSWER = GeneratedAnswer("Закройте быстрозапорные клапаны топлива.", citations=(1,), refusal=False)
+ANSWER = GeneratedAnswer(
+    "Закройте быстрозапорные клапаны топлива.",
+    citations=(RawCitation(1, "Close the fuel valves"),),
+    refusal=False,
+)
 
 
 @pytest.fixture
@@ -56,6 +60,7 @@ async def test_answer_comes_with_citations_in_question_language(
         "answer": "Закройте быстрозапорные клапаны топлива.",
         "language": "ru",
         "refusal": False,
+        "citation_warning": False,
         "citations": [
             {
                 "document_id": 1,
@@ -63,7 +68,7 @@ async def test_answer_comes_with_citations_in_question_language(
                 "title": "Fire",
                 "section_path": "Fire / 4.4 Engine room",
                 "page": 3,
-                "quote": "Close the fuel valves.",
+                "quote": "Close the fuel valves",
             }
         ],
     }
