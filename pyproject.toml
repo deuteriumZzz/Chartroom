@@ -13,6 +13,8 @@ dependencies = [
     "pyjwt>=2.15.1",
     "pwdlib[argon2]>=0.3.1",
     "python-multipart>=0.0.33",
+    "pymupdf>=1.26,<2",
+    "python-docx>=1.2",
 ]
 
 [dependency-groups]
@@ -44,6 +46,8 @@ select = ["E", "F", "I", "UP", "B", "ASYNC"]
 strict = true
 files = ["src", "tests"]
 plugins = ["pydantic.mypy"]
+# У PyMuPDF часть API без аннотаций; строгость к нашему коду и остальным библиотекам не снижаем.
+untyped_calls_exclude = ["pymupdf"]
 
 [tool.importlinter]
 root_package = "chartroom"
@@ -77,3 +81,5 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "session"
 asyncio_default_test_loop_scope = "session"
 testpaths = ["tests"]
+# SWIG-обёртка PyMuPDF шумит при импорте на Python 3.12 — к нашему коду не относится.
+filterwarnings = ["ignore:builtin type (swigvarlink|SwigPyPacked|SwigPyObject) has no __module__:DeprecationWarning"]
