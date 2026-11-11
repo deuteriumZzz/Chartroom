@@ -56,14 +56,26 @@ include_external_packages = true
 [[tool.importlinter.contracts]]
 name = "Слои модуля: api и adapters -> service -> ports -> domain"
 type = "layers"
-containers = ["chartroom.identity"]
-layers = ["api | adapters", "service", "ports", "domain"]
+containers = ["chartroom.identity", "chartroom.knowledge"]
+# (api) — необязательный слой: у модуля может ещё не быть HTTP-интерфейса.
+layers = ["(api) | adapters", "service", "ports", "domain"]
 
 [[tool.importlinter.contracts]]
 name = "Ядро модуля не зависит от фреймворков и инфраструктуры"
 type = "forbidden"
-source_modules = ["chartroom.identity.domain", "chartroom.identity.ports", "chartroom.identity.service"]
-forbidden_modules = ["fastapi", "pydantic", "sqlalchemy", "jwt", "pwdlib", "chartroom.shared.database", "chartroom.shared.config"]
+source_modules = [
+    "chartroom.identity.domain", "chartroom.identity.ports", "chartroom.identity.service",
+    "chartroom.knowledge.domain", "chartroom.knowledge.ports", "chartroom.knowledge.service",
+]
+forbidden_modules = [
+    "fastapi", "pydantic", "sqlalchemy", "jwt", "pwdlib", "pymupdf", "docx",
+    "chartroom.shared.database", "chartroom.shared.config",
+]
+
+[[tool.importlinter.contracts]]
+name = "Модули не импортируют друг друга напрямую"
+type = "independence"
+modules = ["chartroom.identity", "chartroom.knowledge"]
 
 [tool.coverage.run]
 source = ["chartroom"]
