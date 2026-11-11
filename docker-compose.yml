@@ -19,6 +19,12 @@ services:
       - path: .env
         required: false
     ports: ["${API_PORT:-8088}:8000"]
+    # Без проверки `up --wait` считает API готовым сразу после старта контейнера,
+    # ещё до миграций и запуска uvicorn.
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 3s
+      retries: 20
     depends_on:
       db: {condition: service_healthy}
 volumes:
