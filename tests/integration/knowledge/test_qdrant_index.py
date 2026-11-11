@@ -17,7 +17,7 @@ from chartroom.knowledge.domain.chunking import chunk_blocks
 from chartroom.knowledge.domain.indexing import IndexedChunk, chunk_point_id
 from chartroom.knowledge.domain.models import Block, Language
 from chartroom.shared.errors import ServiceUnavailableError
-from chartroom.shared.sparse import bm25_vector
+from chartroom.shared.sparse import SparseVector, bm25_query_vector, bm25_vector
 
 QDRANT_URL = os.environ.get("TEST_QDRANT_URL", "http://localhost:6333")
 
@@ -106,3 +106,50 @@ async def test_unreachable_store_is_service_unavailable() -> None:
         await dead.ensure_collection(3)
     with pytest.raises(ServiceUnavailableError):
         await dead.upsert(_chunks(version_id=1))
+    with pytest.raises(ServiceUnavailableError):
+        await dead.search((1.0, 0.0, 0.0), bm25_query_vector("fire"), [1], limit=5)
+
+
+def _version(version_id: int, texts: list[str]) -> list[IndexedChunk]:
+    blocks = [Block(text, ("Fire", f"{n}")) for n, text in enumerate(texts, 1)]
+    return [
+        # Одинаковый dense у всех фрагментов: порядок задаёт лексическая часть.
+        IndexedChunk(
+            chunk_point_id(version_id, c.index),
+            1,
+            version_id,
+            "Fire",
+            Language.EN,
+            c,
+            (1.0, 0.0, 0.0),
+            bm25_vector(c.text),
+        )
+        for c in chunk_blocks(blocks)
+    ]
+
+
+async def test_hybrid_search_ranks_keyword_match_within_active_versions(
+    index: QdrantChunkIndex,
+) -> None:
+    await index.ensure_collection(3)
+    await index.upsert(_version(1, ["Sound the general alarm.", "Close the fuel valves."]))
+    await index.upsert(
+        _version(2, ["Muster at the lifeboat station.", "Close the fuel valves now."])
+    )
+
+    found = await index.search((1.0, 0.0, 0.0), bm25_query_vector("fuel valves"), [2], limit=5)
+    assert {chunk.version_id for chunk in found} == {2}
+    assert found[0].text == "Close the fuel valves now."
+    assert (found[0].section_path, found[0].language, found[0].page) == (
+        "Fire / 2",
+        Language.EN,
+        None,
+    )
+    assert found[0].score >= found[-1].score
+
+
+async def test_question_without_words_uses_dense_search_only(index: QdrantChunkIndex) -> None:
+    await index.ensure_collection(3)
+    await index.upsert(_version(1, ["Sound the general alarm."]))
+    found = await index.search((1.0, 0.0, 0.0), SparseVector((), ()), [1], limit=5)
+    assert [chunk.text for chunk in found] == ["Sound the general alarm."]
