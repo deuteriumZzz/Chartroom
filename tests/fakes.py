@@ -19,7 +19,14 @@ from chartroom.knowledge.domain.models import (
     IndexingStatus,
     Language,
 )
-from chartroom.qa.domain import AnswerLanguage, GeneratedAnswer, Passage
+from chartroom.qa.domain import (
+    AnswerLanguage,
+    Feedback,
+    GeneratedAnswer,
+    LoggedQuery,
+    Passage,
+    QueryEntry,
+)
 from chartroom.shared.errors import ServiceUnavailableError
 from chartroom.shared.sparse import SparseVector
 
@@ -293,3 +300,66 @@ class ScriptedGenerator:
     ) -> GeneratedAnswer:
         self.calls.append((question, language, list(passages)))
         return self.answer
+
+
+@dataclass
+class QaStore:
+    queries: dict[int, LoggedQuery] = field(default_factory=dict)
+
+
+class InMemoryQueryLog:
+    def __init__(self, store: QaStore) -> None:
+        self._store = store
+
+    async def add(self, entry: QueryEntry) -> int:
+        query_id = max(self._store.queries, default=0) + 1
+        self._store.queries[query_id] = LoggedQuery(
+            id=query_id,
+            user_id=entry.user_id,
+            question=entry.question,
+            answer=entry.answer,
+            latency_ms=entry.latency_ms,
+            model=entry.model,
+            prompt_version=entry.prompt_version,
+            created_at=datetime.now(UTC),
+            feedback=None,
+        )
+        return query_id
+
+    async def get(self, query_id: int) -> LoggedQuery | None:
+        return self._store.queries.get(query_id)
+
+    async def list(self, user_id: int | None, limit: int, offset: int) -> list[LoggedQuery]:
+        queries = sorted(self._store.queries.values(), key=lambda q: q.id, reverse=True)
+        mine = [q for q in queries if user_id is None or q.user_id == user_id]
+        return mine[offset : offset + limit]
+
+
+class InMemoryFeedbackRepository:
+    def __init__(self, store: QaStore) -> None:
+        self._store = store
+
+    async def save(self, query_id: int, feedback: Feedback) -> None:
+        self._store.queries[query_id] = replace(self._store.queries[query_id], feedback=feedback)
+
+
+class InMemoryQaUnitOfWork:
+    """Та же транзакционность, что у SQL: изменения видны снаружи только после commit()."""
+
+    queries: InMemoryQueryLog
+    feedback: InMemoryFeedbackRepository
+
+    def __init__(self, store: QaStore) -> None:
+        self._store = store
+
+    async def __aenter__(self) -> Self:
+        self._pending = QaStore(dict(self._store.queries))
+        self.queries = InMemoryQueryLog(self._pending)
+        self.feedback = InMemoryFeedbackRepository(self._pending)
+        return self
+
+    async def __aexit__(self, *exc_info: object) -> None:
+        return None
+
+    async def commit(self) -> None:
+        self._store.queries = dict(self._pending.queries)

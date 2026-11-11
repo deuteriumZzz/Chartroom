@@ -19,9 +19,10 @@ PASSAGES = [
 ]
 ANSWER = GeneratedAnswer(
     "Закройте быстрозапорные клапаны топлива.",
-    citations=(RawCitation(1, "Close the fuel valves"),),
+    citations=(RawCitation(1, "Close the fuel valves"), RawCitation(9, "ghost")),
     refusal=False,
 )
+Client = tuple[AsyncClient, Container]
 
 
 @pytest.fixture
@@ -32,7 +33,7 @@ def retriever() -> StaticPassageRetriever:
 @pytest.fixture
 async def client(
     session_factory: async_sessionmaker[AsyncSession], retriever: StaticPassageRetriever
-) -> AsyncIterator[tuple[AsyncClient, Container]]:
+) -> AsyncIterator[Client]:
     container = build_container(
         get_settings(), session_factory, RecordingQueue(), retriever, ScriptedGenerator(ANSWER)
     )
@@ -41,26 +42,37 @@ async def client(
         yield c, container
 
 
-async def _officer(client: AsyncClient, container: Container) -> dict[str, str]:
-    await container.identity.register("officer@ship.test", PASSWORD, Role.OFFICER)
-    r = await client.post(
-        "/auth/login", data={"username": "officer@ship.test", "password": PASSWORD}
-    )
+async def _login(client: Client, role: Role, name: str | None = None) -> dict[str, str]:
+    http, container = client
+    email = f"{name or role}@ship.test"
+    await container.identity.register(email, PASSWORD, role)
+    r = await http.post("/auth/login", data={"username": email, "password": PASSWORD})
     return {"Authorization": f"Bearer {r.json()['access_token']}"}
 
 
-async def test_answer_comes_with_citations_in_question_language(
-    client: tuple[AsyncClient, Container], retriever: StaticPassageRetriever
+async def _ask(
+    client: Client, headers: dict[str, str], question: str = "Что сделать с топливом?"
+) -> int:
+    r = await client[0].post("/ask", headers=headers, json={"question": question, "top_k": 2})
+    assert r.status_code == 200, r.text
+    query_id: int = r.json()["query_id"]
+    return query_id
+
+
+async def test_answer_has_verified_citations_and_flags_the_rest(
+    client: Client, retriever: StaticPassageRetriever
 ) -> None:
-    http, container = client
-    question = {"question": "Что сделать с топливом при пожаре в МО?", "top_k": 2}
-    r = await http.post("/ask", headers=await _officer(http, container), json=question)
-    assert r.status_code == 200
-    assert r.json() == {
+    officer = await _login(client, Role.OFFICER)
+    r = await client[0].post(
+        "/ask", headers=officer, json={"question": "Что сделать с топливом?", "top_k": 2}
+    )
+    body = r.json()
+    assert isinstance(body.pop("query_id"), int)
+    assert body == {
         "answer": "Закройте быстрозапорные клапаны топлива.",
         "language": "ru",
         "refusal": False,
-        "citation_warning": False,
+        "citation_warning": True,  # ссылка на фрагмент 9 удалена
         "citations": [
             {
                 "document_id": 1,
@@ -72,30 +84,77 @@ async def test_answer_comes_with_citations_in_question_language(
             }
         ],
     }
-    assert retriever.calls == [("Что сделать с топливом при пожаре в МО?", 2)]
+    assert retriever.calls == [("Что сделать с топливом?", 2)]
+
+
+async def test_officer_sees_own_history_captain_sees_all(client: Client) -> None:
+    first, second = (
+        await _login(client, Role.OFFICER, "first"),
+        await _login(client, Role.OFFICER, "second"),
+    )
+    captain = await _login(client, Role.CAPTAIN)
+    mine = await _ask(client, first, "Вопрос первого")
+    others = await _ask(client, second, "Вопрос второго")
+
+    own = (await client[0].get("/queries", headers=first)).json()
+    assert [q["id"] for q in own] == [mine]
+    assert (own[0]["question"], own[0]["model"], own[0]["prompt_version"]) == (
+        "Вопрос первого",
+        "scripted-model",
+        "test.v1",
+    )
+    everyone = (await client[0].get("/queries", headers=captain)).json()
+    assert [q["id"] for q in everyone] == [others, mine]
+    assert [
+        q["id"] for q in (await client[0].get("/queries?limit=1&offset=1", headers=captain)).json()
+    ] == [mine]
+
+
+async def test_feedback_only_on_own_answer(client: Client) -> None:
+    officer, stranger = await _login(client, Role.OFFICER), await _login(client, Role.CAPTAIN)
+    query_id = await _ask(client, officer)
+    path = f"/ask/{query_id}/feedback"
+
+    assert (
+        await client[0].post(path, headers=officer, json={"useful": False, "comment": "нет шага"})
+    ).status_code == 204
+    assert (await client[0].post(path, headers=officer, json={"useful": True})).status_code == 204
+    [logged] = (await client[0].get("/queries", headers=officer)).json()
+    assert logged["feedback"] == {"useful": True, "comment": None}
+
+    for headers, target in ((stranger, path), (officer, "/ask/999999/feedback")):
+        r = await client[0].post(target, headers=headers, json={"useful": True})
+        assert (r.status_code, r.json()) == (404, {"detail": "Query not found"})
 
 
 @pytest.mark.parametrize(
-    "body",
+    ("method", "path", "body"),
     [
-        {"question": ""},
-        {"question": "   "},
-        {"question": "x" * 1001},
-        {"question": "q", "top_k": 0},
-        {"question": "q", "top_k": 21},
+        ("POST", "/ask", {"question": ""}),
+        ("POST", "/ask", {"question": "   "}),
+        ("POST", "/ask", {"question": "x" * 1001}),
+        ("POST", "/ask", {"question": "q", "top_k": 21}),
+        ("POST", "/ask/1/feedback", {"useful": True, "comment": "x" * 1001}),
+        ("GET", "/queries?limit=0", None),
+        ("GET", "/queries?limit=101", None),
+        ("GET", "/queries?offset=-1", None),
     ],
 )
 async def test_invalid_requests_are_422(
-    client: tuple[AsyncClient, Container], body: dict[str, object]
+    client: Client, method: str, path: str, body: dict[str, object] | None
 ) -> None:
-    http, container = client
-    r = await http.post("/ask", headers=await _officer(http, container), json=body)
+    officer = await _login(client, Role.OFFICER)
+    r = await client[0].request(method, path, headers=officer, json=body)
     assert r.status_code == 422
 
 
-async def test_ask_requires_authentication(client: tuple[AsyncClient, Container]) -> None:
-    http, _ = client
-    assert (await http.post("/ask", json={"question": "fire"})).status_code == 401
+@pytest.mark.parametrize(
+    ("method", "path"), [("POST", "/ask"), ("GET", "/queries"), ("POST", "/ask/1/feedback")]
+)
+async def test_endpoints_require_authentication(client: Client, method: str, path: str) -> None:
+    assert (
+        await client[0].request(method, path, json={"question": "q", "useful": True})
+    ).status_code == 401
 
 
 async def test_real_container_refuses_on_empty_library_and_closes(
@@ -104,7 +163,11 @@ async def test_real_container_refuses_on_empty_library_and_closes(
     for key in ("", "test-key"):
         settings = get_settings().model_copy(update={"gemini_api_key": SecretStr(key)})
         container = build_container(settings, session_factory, RecordingQueue())
+        user = await container.identity.register(f"k{len(key)}@ship.test", PASSWORD, Role.OFFICER)
         # В чистой БД нет активных версий: честный отказ, Gemini и Qdrant не вызываются.
-        answer = await container.questions.ask("Что делать при пожаре?")
-        assert (answer.refusal, answer.text) == (True, "В загруженных документах ответа нет.")
+        reply = await container.questions.ask("Что делать при пожаре?", user.id)
+        assert (reply.answer.refusal, reply.answer.text) == (
+            True,
+            "В загруженных документах ответа нет.",
+        )
         await container.aclose()

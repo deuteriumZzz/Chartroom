@@ -6,7 +6,8 @@ from sqlalchemy import Connection
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 import chartroom.identity.adapters.persistence
-import chartroom.knowledge.adapters.persistence  # noqa: F401  регистрируют таблицы в Base
+import chartroom.knowledge.adapters.persistence
+import chartroom.qa.adapters.persistence  # noqa: F401  регистрируют таблицы в Base
 from chartroom.shared.database import Base
 
 

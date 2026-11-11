@@ -33,6 +33,7 @@ from chartroom.knowledge.ports import IndexingQueue, QueryEmbedder
 from chartroom.knowledge.service import ChunkRetriever, DocumentChunker, DocumentLibrary, Indexer
 from chartroom.qa.adapters.gemini import GeminiAnswerGenerator, UnconfiguredAnswerGenerator
 from chartroom.qa.adapters.knowledge import KnowledgePassageRetriever
+from chartroom.qa.adapters.persistence import SqlQaUnitOfWork
 from chartroom.qa.domain import RefusalPolicy
 from chartroom.qa.ports import AnswerGenerator, PassageRetriever
 from chartroom.qa.service import QuestionService
@@ -97,7 +98,10 @@ def build_container(
         )
         retriever = KnowledgePassageRetriever(chunks)
     questions = QuestionService(
-        retriever, generator or default_generator, RefusalPolicy(settings.refusal_min_similarity)
+        retriever=retriever,
+        generator=generator or default_generator,
+        policy=RefusalPolicy(settings.refusal_min_similarity),
+        uow_factory=lambda: SqlQaUnitOfWork(sessions),
     )
     return Container(
         identity=identity, library=library, questions=questions, engine=engine, qdrant=qdrant

@@ -2,16 +2,21 @@ import pytest
 
 from chartroom.qa.domain import (
     REFUSAL_TEXT,
+    Answer,
     AnswerLanguage,
+    Feedback,
     GeneratedAnswer,
+    InvalidFeedbackError,
     InvalidQuestionError,
     Passage,
+    QueryNotFoundError,
     RawCitation,
     RefusalPolicy,
+    Viewer,
 )
 from chartroom.qa.service import QuestionService
 from chartroom.shared.errors import ServiceUnavailableError
-from tests.fakes import ScriptedGenerator, StaticPassageRetriever
+from tests.fakes import InMemoryQaUnitOfWork, QaStore, ScriptedGenerator, StaticPassageRetriever
 
 POLICY = RefusalPolicy(min_similarity=0.6)
 VALVES = Passage(1, 7, "Fire", "Fire / 4.4 Engine room", None, "Close the fuel valves.", 0.03, 0.82)
@@ -19,11 +24,28 @@ ALARM = Passage(1, 7, "Fire", "Fire / 4.2 Alarm", None, "Sound the general alarm
 GOOD = GeneratedAnswer("Close the fuel valves.", (RawCitation(1, "Close the fuel valves"),), False)
 
 
+OFFICER = 7
+
+
+class Asker:
+    """Сервис с фейками: ask() возвращает ответ, журнал доступен для проверок."""
+
+    def __init__(self, passages: list[Passage], answer: GeneratedAnswer = GOOD) -> None:
+        self.retriever, self.generator = StaticPassageRetriever(passages), ScriptedGenerator(answer)
+        self.store = QaStore()
+        self.service = QuestionService(
+            self.retriever, self.generator, POLICY, lambda: InMemoryQaUnitOfWork(self.store)
+        )
+
+    async def ask(self, question: str, top_k: int = 5) -> Answer:
+        return (await self.service.ask(question, OFFICER, top_k)).answer
+
+
 def _service(
     passages: list[Passage], answer: GeneratedAnswer = GOOD
-) -> tuple[QuestionService, StaticPassageRetriever, ScriptedGenerator]:
-    retriever, generator = StaticPassageRetriever(passages), ScriptedGenerator(answer)
-    return QuestionService(retriever, generator, POLICY), retriever, generator
+) -> tuple[Asker, StaticPassageRetriever, ScriptedGenerator]:
+    asker = Asker(passages, answer)
+    return asker, asker.retriever, asker.generator
 
 
 async def test_answer_is_generated_from_passages_with_verified_citations() -> None:
@@ -108,6 +130,72 @@ async def test_model_outage_propagates() -> None:
         async def generate(self, *args: object, **kwargs: object) -> GeneratedAnswer:
             raise ServiceUnavailableError("Language model is unavailable")
 
-    service = QuestionService(StaticPassageRetriever([VALVES]), DownGenerator(GOOD), POLICY)
+    service = QuestionService(
+        StaticPassageRetriever([VALVES]),
+        DownGenerator(GOOD),
+        POLICY,
+        lambda: InMemoryQaUnitOfWork(QaStore()),
+    )
     with pytest.raises(ServiceUnavailableError):
-        await service.ask("fuel valves?")
+        await service.ask("fuel valves?", OFFICER)
+
+
+async def test_every_answer_is_logged_with_model_prompt_and_latency() -> None:
+    asker = Asker([VALVES])
+    reply = await asker.service.ask("fuel valves?", OFFICER)
+    refused = await Asker([]).service.ask("fuel valves?", OFFICER)
+    [logged] = asker.store.queries.values()
+    assert (logged.id, logged.user_id, logged.question, logged.answer) == (
+        reply.query_id,
+        OFFICER,
+        "fuel valves?",
+        reply.answer,
+    )
+    assert (logged.model, logged.prompt_version, logged.latency_ms >= 0) == (
+        "scripted-model",
+        "test.v1",
+        True,
+    )
+    assert refused.answer.refusal  # отказ без вызова модели — тоже в журнале, без модели и промпта
+
+
+async def test_refusal_without_model_is_logged_without_model() -> None:
+    asker = Asker([])
+    await asker.service.ask("fuel valves?", OFFICER)
+    [logged] = asker.store.queries.values()
+    assert (logged.answer.refusal, logged.model, logged.prompt_version) == (True, None, None)
+
+
+async def test_officer_sees_own_history_captain_sees_everyone() -> None:
+    asker = Asker([VALVES])
+    for user_id in (OFFICER, 8, OFFICER):
+        await asker.service.ask("fuel valves?", user_id)
+    own = await asker.service.history(Viewer(OFFICER, sees_all_queries=False), limit=10, offset=0)
+    everyone = await asker.service.history(Viewer(99, sees_all_queries=True), limit=2, offset=1)
+    assert [(q.id, q.user_id) for q in own] == [(3, OFFICER), (1, OFFICER)]
+    assert [q.id for q in everyone] == [2, 1]
+
+
+async def test_feedback_is_saved_and_replaced_on_own_query() -> None:
+    asker = Asker([VALVES])
+    reply = await asker.service.ask("fuel valves?", OFFICER)
+    me = Viewer(OFFICER, sees_all_queries=False)
+    await asker.service.give_feedback(reply.query_id, me, useful=False, comment="  missing step  ")
+    await asker.service.give_feedback(reply.query_id, me, useful=True, comment=" ")
+    assert asker.store.queries[reply.query_id].feedback == Feedback(useful=True, comment=None)
+
+
+@pytest.mark.parametrize("viewer", [Viewer(8, False), Viewer(99, True)])
+async def test_feedback_on_someone_elses_query_looks_like_missing(viewer: Viewer) -> None:
+    asker = Asker([VALVES])
+    reply = await asker.service.ask("fuel valves?", OFFICER)
+    for query_id in (reply.query_id, 404):
+        with pytest.raises(QueryNotFoundError):
+            await asker.service.give_feedback(query_id, viewer, useful=True, comment=None)
+
+
+async def test_too_long_feedback_comment_is_rejected() -> None:
+    asker = Asker([VALVES])
+    reply = await asker.service.ask("fuel valves?", OFFICER)
+    with pytest.raises(InvalidFeedbackError):
+        await asker.service.give_feedback(reply.query_id, Viewer(OFFICER, False), True, "x" * 1001)

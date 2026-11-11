@@ -88,6 +88,7 @@ modules = ["chartroom.identity", "chartroom.knowledge", "chartroom.qa"]
 ignore_imports = [
     "chartroom.knowledge.api -> chartroom.identity.api",
     "chartroom.qa.api -> chartroom.identity.api",
+    "chartroom.qa.api -> chartroom.identity.domain",
     "chartroom.qa.adapters.knowledge -> chartroom.knowledge.service",
 ]
 

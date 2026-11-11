@@ -17,7 +17,9 @@ from tests.fakes import (
     FakePasswordHasher,
     InMemoryIdentityUnitOfWork,
     InMemoryKnowledgeUnitOfWork,
+    InMemoryQaUnitOfWork,
     KnowledgeStore,
+    QaStore,
     RecordingQueue,
     ScriptedGenerator,
     StaticPassageRetriever,
@@ -37,6 +39,7 @@ def app() -> FastAPI:
         StaticPassageRetriever([]),
         ScriptedGenerator(GeneratedAnswer("", (), refusal=True)),
         RefusalPolicy(min_similarity=0.5),
+        lambda: InMemoryQaUnitOfWork(QaStore()),
     )
     return create_app(Container(identity=identity, library=library, questions=questions))
 
