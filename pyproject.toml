@@ -74,6 +74,7 @@ source_modules = [
 ]
 forbidden_modules = [
     "fastapi", "pydantic", "sqlalchemy", "jwt", "pwdlib", "pymupdf", "docx",
+    "qdrant_client", "google", "celery", "kombu", "httpx",
     "chartroom.shared.database", "chartroom.shared.config",
 ]
 

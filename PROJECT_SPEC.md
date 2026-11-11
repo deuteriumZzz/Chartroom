@@ -1,7 +1,7 @@
 # ТЗ: Chartroom
 
 Демонстрационный backend-проект «ассистент по судовым процедурам и отчётам».
-Автор ТЗ: роль «архитектор + старший разработчик». Статус: согласовано, в работе (дни 1–3 выполнены).
+Автор ТЗ: роль «архитектор + старший разработчик». Статус: согласовано, в работе (дни 1–4 выполнены).
 
 ---
 
@@ -119,9 +119,9 @@ client (HTTP: HTMX UI / Swagger · CLI)
 
 ### Модель данных (PostgreSQL)
 `users(id, email, password_hash, role)` ·
-`documents(id, title, language, status)` ·
-`document_versions(id, document_id, version, checksum, uploaded_at, is_active)` ·
-`chunks(id, version_id, section_path, page, text_hash, qdrant_id)` ·
+`documents(id, title, title_key, language)` ·
+`document_versions(id, document_id, label, issued_on, filename, checksum, content, status, error, is_active, uploaded_at)` — статус индексации хранится у версии (ADR-005) ·
+`chunks(id, version_id, chunk_index, section_path, page, text_hash, qdrant_id)` ·
 `queries(id, user_id, mode, question, language, answer, refusal, latency_ms, model, prompt_version, created_at)` ·
 `citations(id, query_id, chunk_id, quote)` ·
 `tool_calls(id, query_id, step, name, args_json, ok, latency_ms)` ·
@@ -208,7 +208,7 @@ chartroom/
 | 1 ✅ | Каркас: uv, FastAPI, Postgres, Alembic, Docker Compose, CI |
 | 2 ✅ | Auth и роли; модульная архитектура (порты/адаптеры), контракты слоёв, ADR-001…003 |
 | 3 ✅ | Корпус: 10 процедур RU+EN (черновики готовы, правка — автор), парсинг PDF/DOCX/MD/TXT и чанкинг с `section_path`, ADR-004 |
-| 4 | Эмбеддинги, Qdrant, индексация через Celery, статус задач |
+| 4 ✅ | Эмбеддинги (Gemini), Qdrant (dense + BM25), индексация через Celery, загрузка и статус по API, засев корпуса, ADR-005 |
 | 5 | Гибридный поиск (dense+sparse, RRF), эндпоинт `/ask` без генерации |
 | 6 | Генерация с structured output, политика отказа, цитаты, промпты в файлах |
 | 7 | Валидатор цитат, аудит запросов, обратная связь |

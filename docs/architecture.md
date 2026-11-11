@@ -31,7 +31,7 @@ flowchart LR
 | Модуль | Отвечает за | ТЗ | Статус |
 |---|---|---|---|
 | `identity` | пользователи, роли, вход | §2 | готов |
-| `knowledge` | документы, версии, разбор, нарезка, индексация | FR-1, 2, 8 | разбор и нарезка готовы; индексация — день 4 |
+| `knowledge` | документы, версии, разбор, нарезка, индексация | FR-1, 2, 8 | готов (ADR-004, ADR-005) |
 | `qa` | поиск, отказ, генерация, цитаты, отзывы | FR-3…7 | день 5–7 |
 | `evaluation` | золотые наборы, метрики | FR-14, 15, 23 | день 8–9, 13 |
 | `reports` | шаблоны, извлечение, проверка отчётов | FR-9…13 | день 10–11 |
@@ -39,8 +39,10 @@ flowchart LR
 
 `shared/` — общее ядро без бизнес-логики: конфиг, базовые ошибки, база ORM и Unit of Work.
 
+Точки сборки две: `main.py` (API) и `worker.py` (Celery-worker индексации). Обе берут зависимости из `bootstrap.py`.
+
 ## Ошибки
-Домен бросает наследников `DomainError`: `AuthenticationError`, `PermissionDeniedError`, `ConflictError`, `InvalidInputError`. Перевод в HTTP-статусы сделан в одном месте (`main.py`), поэтому новый модуль не трогает обработчики.
+Домен бросает наследников `DomainError`: `AuthenticationError` → 401, `PermissionDeniedError` → 403, `NotFoundError` → 404, `ConflictError` → 409, `InvalidInputError` → 422. Недоступность внешнего сервиса — `ServiceUnavailableError` → 503 с `Retry-After`: это не бизнес-ошибка, и её можно повторить. Перевод в HTTP-статусы сделан в одном месте (`main.py`), поэтому новый модуль не трогает обработчики.
 
 ## Как добавить модуль
 1. `chartroom/<module>/` с `domain.py`, `ports.py`, `service.py`, `api.py`, `adapters/`.
