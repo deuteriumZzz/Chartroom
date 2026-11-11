@@ -27,14 +27,17 @@ from chartroom.knowledge.adapters.parsers import (
 )
 from chartroom.knowledge.adapters.persistence import SqlKnowledgeUnitOfWork
 from chartroom.knowledge.adapters.qdrant import QdrantChunkIndex
+from chartroom.knowledge.adapters.queue import CeleryIndexingQueue, build_celery_producer
 from chartroom.knowledge.domain.models import DocumentFormat
-from chartroom.knowledge.service import DocumentChunker, Indexer
+from chartroom.knowledge.ports import IndexingQueue
+from chartroom.knowledge.service import DocumentChunker, DocumentLibrary, Indexer
 from chartroom.shared.config import Settings
 
 
 @dataclass(frozen=True)
 class Container:
     identity: IdentityService
+    library: DocumentLibrary
     engine: AsyncEngine | None = None  # None, если фабрику сессий передали снаружи (тесты)
 
     async def aclose(self) -> None:
@@ -43,8 +46,11 @@ class Container:
 
 
 def build_container(
-    settings: Settings, session_factory: async_sessionmaker[AsyncSession] | None = None
+    settings: Settings,
+    session_factory: async_sessionmaker[AsyncSession] | None = None,
+    queue: IndexingQueue | None = None,
 ) -> Container:
+    """session_factory и queue подменяют тесты; в работе они строятся из настроек."""
     engine = None
     if session_factory is None:
         engine = create_async_engine(settings.database_url, pool_pre_ping=True)
@@ -58,7 +64,11 @@ def build_container(
             settings.jwt_secret.get_secret_value(), timedelta(minutes=settings.jwt_ttl_minutes)
         ),
     )
-    return Container(identity=identity, engine=engine)
+    library = DocumentLibrary(
+        uow_factory=lambda: SqlKnowledgeUnitOfWork(sessions),
+        queue=queue or CeleryIndexingQueue(build_celery_producer(settings.redis_url)),
+    )
+    return Container(identity=identity, library=library, engine=engine)
 
 
 def build_document_chunker() -> DocumentChunker:

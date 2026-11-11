@@ -39,6 +39,9 @@ def require_role(minimum: Role) -> Callable[[User], Awaitable[User]]:
     return dependency
 
 
+AdminUser = Annotated[User, Depends(require_role(Role.ADMIN))]
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: Literal["bearer"] = "bearer"

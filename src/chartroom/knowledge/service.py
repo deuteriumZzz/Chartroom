@@ -20,6 +20,7 @@ from chartroom.knowledge.domain.models import (
     ensure_new_version,
     normalize_label,
     normalize_title,
+    safe_filename,
     should_activate,
 )
 from chartroom.knowledge.domain.sparse import bm25_vector
@@ -59,10 +60,13 @@ class DocumentLibrary:
     async def upload(self, upload: DocumentUpload) -> DocumentVersion:
         if len(upload.content) > MAX_UPLOAD_BYTES:
             raise FileTooLargeError
-        detect_format(upload.filename, upload.content)  # подменённый файл отсекаем до сохранения
         upload = replace(
-            upload, title=normalize_title(upload.title), label=normalize_label(upload.label)
+            upload,
+            title=normalize_title(upload.title),
+            label=normalize_label(upload.label),
+            filename=safe_filename(upload.filename),
         )
+        detect_format(upload.filename, upload.content)  # подменённый файл отсекаем до сохранения
         checksum = hashlib.sha256(upload.content).hexdigest()
         async with self._uow_factory() as uow:
             document = await uow.documents.find(upload.title, upload.language)

@@ -152,6 +152,11 @@ def normalize_title(raw: str) -> str:
     return title
 
 
+def safe_filename(raw: str) -> str:
+    """Только последний компонент пути: «../../etc/fire.md» становится «fire.md»."""
+    return raw.replace("\\", "/").rsplit("/", 1)[-1]
+
+
 def normalize_label(raw: str) -> str:
     label = raw.strip()
     if not label:

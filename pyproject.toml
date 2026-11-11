@@ -81,6 +81,8 @@ forbidden_modules = [
 name = "Модули не импортируют друг друга напрямую"
 type = "independence"
 modules = ["chartroom.identity", "chartroom.knowledge"]
+# Единственная разрешённая связь: HTTP-слой модуля проверяет права через identity.
+ignore_imports = ["chartroom.knowledge.api -> chartroom.identity.api"]
 
 [tool.coverage.run]
 source = ["chartroom"]

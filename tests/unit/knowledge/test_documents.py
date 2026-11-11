@@ -81,3 +81,12 @@ def test_embedding_input_adds_document_context(section_path: str, expected_headi
         index=0, text="Close the valves.", section_path=section_path, page=None, token_count=4
     )
     assert embedding_input("Fire", chunk) == f"{expected_heading}\n\nClose the valves."
+
+
+@pytest.mark.parametrize(
+    "raw", ["fire.md", "../../etc/fire.md", "C:\\Users\\x\\fire.md", "/tmp/fire.md"]
+)
+def test_safe_filename_keeps_only_the_name(raw: str) -> None:
+    from chartroom.knowledge.domain.models import safe_filename
+
+    assert safe_filename(raw) == "fire.md"

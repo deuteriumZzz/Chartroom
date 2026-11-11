@@ -8,9 +8,16 @@ from httpx import ASGITransport, AsyncClient
 from chartroom.bootstrap import Container
 from chartroom.identity.adapters.tokens import JwtTokenService
 from chartroom.identity.service import IdentityService
+from chartroom.knowledge.service import DocumentLibrary
 from chartroom.main import create_app
 from chartroom.shared.errors import DomainError
-from tests.fakes import FakePasswordHasher, InMemoryIdentityUnitOfWork
+from tests.fakes import (
+    FakePasswordHasher,
+    InMemoryIdentityUnitOfWork,
+    InMemoryKnowledgeUnitOfWork,
+    KnowledgeStore,
+    RecordingQueue,
+)
 
 
 @pytest.fixture
@@ -20,7 +27,9 @@ def app() -> FastAPI:
         FakePasswordHasher(),
         JwtTokenService("unit-test-secret-that-is-long-enough-0123456789", timedelta(minutes=5)),
     )
-    return create_app(Container(identity=identity))
+    store = KnowledgeStore()
+    library = DocumentLibrary(lambda: InMemoryKnowledgeUnitOfWork(store), RecordingQueue())
+    return create_app(Container(identity=identity, library=library))
 
 
 @pytest.fixture
