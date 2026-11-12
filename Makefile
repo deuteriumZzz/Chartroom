@@ -24,9 +24,9 @@ seed:
 	docker compose exec api python -m chartroom.cli seed-corpus
 
 # Eval на поднятом стеке (make up && make seed): процесс на хосте ходит в Postgres и Qdrant по
-# localhost. AS — пользователь, от имени которого задаются вопросы; ARGS=--retrieval-only — без
+# localhost. EVAL_USER — пользователь, от имени которого задаются вопросы; ARGS=--retrieval-only — без
 # генерации (не тратит лимит модели).
 eval:
 	DATABASE_URL=postgresql+asyncpg://chartroom:chartroom@localhost:5432/chartroom \
 	QDRANT_URL=http://localhost:6333 \
-	uv run python -m chartroom.cli eval --as $(or $(AS),admin@ship.test) $(ARGS)
+	uv run python -m chartroom.cli eval --as $(or $(EVAL_USER),admin@ship.test) $(ARGS)
