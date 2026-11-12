@@ -124,7 +124,7 @@ client (HTTP: HTMX UI / Swagger · CLI)
 `chunks(id, version_id, chunk_index, section_path, page, text_hash, qdrant_id)` ·
 `queries(id, user_id, question, language, answer, refusal, citation_warning, latency_ms, model, prompt_version, created_at)` — `mode` добавится с агентом (ADR-008) ·
 `citations(id, query_id, position, document_id, version_id, title, section_path, page, quote)` — без внешних ключей на документы, чтобы журнал переживал удаление ·
-`tool_calls(id, query_id, step, name, args_json, ok, latency_ms)` ·
+`agent_runs(id, user_id, question, language, answer, refusal, citation_warning, steps, latency_ms, model, prompt_version, created_at)` · `tool_calls(id, run_id, step, name, args_json, ok, error, latency_ms)` — у агента свои таблицы, не `queries.mode` (ADR-012) ·
 `feedback(query_id, useful, comment, created_at)` — один отзыв на ответ ·
 `report_templates(id, name, title, schema, version, created_at)` ·
 `reports(id, template_id, user_id, source_text, data, status, issues, created_at, updated_at)` — замечания одним JSONB-полем (ADR-011) ·
@@ -215,8 +215,8 @@ chartroom/
 | 9 ✅ | Решения по eval: порог отказа 0,64, реранкер и смена нарезки не нужны (hit@5 = 1,00), ADR-010 |
 | 10 ✅ | M2: шаблоны (JSON Schema, версии), извлечение через Gemini, валидация с замечаниями |
 | 11 ✅ | M2: сохранение, статусы и правила принятия, 3 стартовых шаблона, ADR-011 |
-| 12 | M4: цикл function calling, инструменты, права, аудит `tool_calls` |
-| 13 | M4: eval агента, тесты IDOR и prompt injection |
+| 12 ✅ | M4: цикл function calling, инструменты, права, аудит `tool_calls`, ADR-012 |
+| 13 ✅ | M4: eval агента (`make eval-agent`), тесты IDOR и prompt injection |
 | 14 | UI (HTMX): чат, загрузка, форма отчёта |
 | 15 | Rate limit, защита загрузки, pip-audit и gitleaks, метрики Prometheus, логи |
 | 16 | README с результатами eval, демо 1–2 мин, финальная проверка запуска «с нуля» |
