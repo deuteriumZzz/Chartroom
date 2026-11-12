@@ -1,0 +1,8 @@
+title = "Chartroom"
+
+[extend]
+useDefault = true
+
+# В тестах — заведомо вымышленные пароли и ключи (в тестовом окружении настоящих нет).
+[allowlist]
+paths = ['''^tests/''']
