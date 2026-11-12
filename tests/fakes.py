@@ -444,6 +444,23 @@ class InMemoryReportRepository:
         self._store.reports[report_id] = report
         return report
 
+    async def list(
+        self,
+        user_id: int | None,
+        status: ReportStatus | None,
+        template_name: str | None,
+        limit: int,
+    ) -> list[Report]:
+        names = {t.id: t.name for t in self._store.templates.values()}
+        reports = sorted(self._store.reports.values(), key=lambda r: r.id, reverse=True)
+        return [
+            r
+            for r in reports
+            if (user_id is None or r.user_id == user_id)
+            and (status is None or r.status is status)
+            and (template_name is None or names[r.template_id] == template_name)
+        ][:limit]
+
 
 class InMemoryReportsUnitOfWork:
     """Та же транзакционность, что у SQL: изменения видны снаружи только после commit()."""

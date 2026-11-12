@@ -131,3 +131,20 @@ async def test_extract_input_errors(template: str, text: str, error: type[Except
     with pytest.raises(error):
         await service.extract(template, text, OFFICER.user_id)
     assert extractor.calls == []
+
+
+async def test_listing_respects_ownership_and_filters() -> None:
+    service, extractor = await _service({"crew_total": 22, "crew_present": 22})
+    await service.create_template("noon_report", "Noon", SCHEMA)
+    mine = await service.extract("drill_checklist", "text", OFFICER.user_id)
+    extractor.data = {"crew_total": 22, "crew_present": None}
+    theirs = await service.extract("noon_report", "text", OTHER.user_id)
+    assert [r.id for r in await service.list_for(OFFICER)] == [mine.id]
+    assert [r.id for r in await service.list_for(CAPTAIN)] == [theirs.id, mine.id]
+    assert [r.id for r in await service.list_for(CAPTAIN, status=ReportStatus.NEEDS_REVIEW)] == [
+        theirs.id
+    ]
+    assert [r.id for r in await service.list_for(CAPTAIN, template_name="drill_checklist")] == [
+        mine.id
+    ]
+    assert len(await service.list_for(CAPTAIN, limit=1)) == 1

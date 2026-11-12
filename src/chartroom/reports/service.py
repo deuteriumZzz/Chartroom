@@ -57,6 +57,17 @@ class ReportService:
             await uow.commit()
         return report
 
+    async def list_for(
+        self,
+        viewer: Viewer,
+        status: ReportStatus | None = None,
+        template_name: str | None = None,
+        limit: int = 20,
+    ) -> list[Report]:
+        owner = None if viewer.is_supervisor else viewer.user_id
+        async with self._uow_factory() as uow:
+            return await uow.reports.list(owner, status, template_name, limit)
+
     async def get(self, report_id: int, viewer: Viewer) -> Report:
         async with self._uow_factory() as uow:
             return await self._visible(uow, report_id, viewer)

@@ -21,6 +21,7 @@ from chartroom.knowledge.domain.models import (
     EmptyDocumentError,
     FileTooLargeError,
     IndexingStatus,
+    Language,
     detect_format,
     ensure_new_version,
     normalize_label,
@@ -85,6 +86,16 @@ class DocumentLibrary:
         # В очередь — только после commit: иначе worker может не найти ещё не сохранённую версию.
         await self._queue.enqueue(version.id)
         return version
+
+    async def active_version(self, title: str) -> tuple[Document, DocumentVersion | None]:
+        """Документ по названию (без учёта регистра, на любом языке) и его действующая редакция."""
+        async with self._uow_factory() as uow:
+            for language in Language:
+                document = await uow.documents.find(normalize_title(title), language)
+                if document is not None:
+                    versions = await uow.versions.list_for(document.id)
+                    return document, next((v for v in versions if v.is_active), None)
+        raise DocumentNotFoundError
 
     async def overview(self, document_id: int) -> DocumentOverview:
         async with self._uow_factory() as uow:

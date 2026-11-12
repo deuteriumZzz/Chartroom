@@ -44,6 +44,16 @@ class ReportRepository(Protocol):
         self, report_id: int, data: ReportData, status: ReportStatus, issues: tuple[Issue, ...]
     ) -> Report: ...
 
+    async def list(
+        self,
+        user_id: int | None,
+        status: ReportStatus | None,
+        template_name: str | None,
+        limit: int,
+    ) -> list[Report]:
+        """Новые сначала. user_id=None — отчёты всех пользователей."""
+        ...
+
 
 class ReportsUnitOfWork(Protocol):
     @property

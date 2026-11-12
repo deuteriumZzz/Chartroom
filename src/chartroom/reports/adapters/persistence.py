@@ -168,6 +168,27 @@ class SqlReportRepository:
         await self._session.flush()
         return record.to_domain()
 
+    async def list(
+        self,
+        user_id: int | None,
+        status: ReportStatus | None,
+        template_name: str | None,
+        limit: int,
+    ) -> list[Report]:
+        statement = select(ReportRecord)
+        if user_id is not None:
+            statement = statement.where(ReportRecord.user_id == user_id)
+        if status is not None:
+            statement = statement.where(ReportRecord.status == status)
+        if template_name is not None:
+            statement = statement.join(ReportTemplateRecord).where(
+                ReportTemplateRecord.name == template_name
+            )
+        records = await self._session.scalars(
+            statement.order_by(ReportRecord.id.desc()).limit(limit)
+        )
+        return [record.to_domain() for record in records]
+
 
 class SqlReportsUnitOfWork(SqlAlchemyUnitOfWork):
     templates: SqlTemplateRepository

@@ -81,6 +81,18 @@ async def test_storage_contract(uow_and_user: tuple[Callable[[], ReportsUnitOfWo
         )
         await uow.commit()
     async with uow_factory() as uow:
+        other = await uow.reports.add(v1.id, user_id, "x", {}, ReportStatus.DRAFT, ())
+        await uow.commit()
+    async with uow_factory() as uow:
+        assert [r.id for r in await uow.reports.list(user_id, None, None, 10)] == [
+            other.id,
+            report.id,
+        ]
+        assert [r.id for r in await uow.reports.list(None, ReportStatus.DRAFT, "drill", 1)] == [
+            other.id
+        ]
+        assert await uow.reports.list(user_id + 1000, None, None, 10) == []
+    async with uow_factory() as uow:
         assert await uow.reports.get(report.id) == updated
         assert await uow.reports.get(report.id + 1000) is None
 

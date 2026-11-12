@@ -112,3 +112,18 @@ async def test_invalid_upload_stores_nothing(
 async def test_overview_of_missing_document(library: DocumentLibrary) -> None:
     with pytest.raises(DocumentNotFoundError):
         await library.overview(404)
+
+
+async def test_active_version_is_found_by_title_in_any_language(
+    library: DocumentLibrary, store: KnowledgeStore
+) -> None:
+    from dataclasses import replace
+
+    version = await library.upload(_upload())
+    store.versions[version.id] = replace(store.versions[version.id], is_active=True)
+    document, active = await library.active_version("  FIRE   safety ")
+    assert (document.title, active) == ("Fire Safety", store.versions[version.id])
+    await library.upload(_upload(title="Пожар", language=Language.RU, content=b"# ru"))
+    assert (await library.active_version("пожар"))[1] is None  # загружен, но ещё не проиндексирован
+    with pytest.raises(DocumentNotFoundError):
+        await library.active_version("Unknown")
