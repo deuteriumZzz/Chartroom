@@ -27,8 +27,8 @@ class Settings(BaseSettings):
         default=["gemini-3.6-flash", "gemini-3.5-flash"], min_length=1
     )
     # Порог сходства лучшего фрагмента с вопросом, ниже которого — отказ без вызова модели.
-    # Не откалиброван: подбирается на золотом наборе (день 8).
-    refusal_min_similarity: float = Field(default=0.55, ge=0.0, le=1.0)
+    # Откалиброван на золотом наборе (ADR-010): вопросы без ответа — до 0.632, с ответом — от 0.658.
+    refusal_min_similarity: float = Field(default=0.64, ge=0.0, le=1.0)
 
 
 @lru_cache
