@@ -1,3 +1,4 @@
+import asyncio
 import time
 from collections.abc import Callable
 from dataclasses import replace
@@ -6,6 +7,7 @@ from typing import Any
 from chartroom.agent.domain import (
     DATA_TOOL_SPECS,
     DEFAULT_SEARCH_TOP_K,
+    MAX_REQUEST_SECONDS,
     MAX_SEARCH_QUERY,
     MAX_STEPS,
     NO_DATA_TEXT,
@@ -60,8 +62,14 @@ class AgentService:
         records: list[ToolCallRecord] = []
         results: tuple[ToolResult, ...] = ()
         answer: AgentAnswer | None = None
+        # Общий дедлайн ставится на ходы модели: это долгая часть, у инструментов свои таймауты.
+        deadline = asyncio.get_running_loop().time() + MAX_REQUEST_SECONDS
         for step in range(1, MAX_STEPS + 1):
-            turn = await conversation.next_turn(results)
+            try:
+                async with asyncio.timeout_at(deadline):
+                    turn = await conversation.next_turn(results)
+            except TimeoutError:
+                break
             submission = next((c for c in turn.calls if c.name == SUBMIT_ANSWER), None)
             if submission is not None:
                 try:
@@ -83,8 +91,8 @@ class AgentService:
             results = tuple(
                 [await self._run(step, call, viewer, sources, records) for call in turn.calls]
             )
-        if answer is None:  # FR-20: шаги кончились — честно говорим, что данных нет
-            answer = AgentAnswer(NO_DATA_TEXT[language], language, True, (), False, MAX_STEPS)
+        if answer is None:  # FR-20: шаги или время кончились — честно говорим, что данных нет
+            answer = AgentAnswer(NO_DATA_TEXT[language], language, True, (), False, step)
 
         run = AgentRun(
             user_id=viewer.user_id,

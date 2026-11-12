@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any
 
 import pytest
@@ -163,6 +164,29 @@ async def test_step_limit_ends_with_an_honest_no_data_answer() -> None:
         MAX_STEPS,
     )
     assert len(reply.tool_calls) == MAX_STEPS and len(runs) == 1
+
+
+class SlowConversation:
+    model: str | None = None
+
+    async def next_turn(self, results: object) -> ModelTurn:
+        await asyncio.sleep(1)
+        return ModelTurn((), "too late")
+
+
+async def test_request_deadline_ends_with_an_honest_no_data_answer(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("chartroom.agent.service.MAX_REQUEST_SECONDS", 0.01)
+    service, model, runs, _ = _agent([])
+    monkeypatch.setattr(model, "conversation", SlowConversation())
+    reply = await service.ask("Where is the CO2 release?", OFFICER)
+    assert (reply.answer.refusal, reply.answer.text, reply.answer.steps) == (
+        True,
+        NO_DATA_TEXT[Language.EN],
+        1,
+    )
+    assert len(runs) == 1  # и такой запрос попадает в аудит
 
 
 async def test_malformed_submission_is_returned_and_can_be_corrected() -> None:

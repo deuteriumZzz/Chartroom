@@ -14,6 +14,9 @@ from chartroom.shared.quotes import quote_in, words
 from chartroom.shared.schema import Schema
 
 MAX_STEPS = 4  # FR-20: больше шагов — честный отказ, а не бесконечный цикл
+# FR-20: лимит на весь запрос. Шаг ограничен таймаутом модели (shared.gemini.PER_MODEL_HTTP), но
+# 4 шага по цепочке моделей без общего лимита растянулись бы на минуты.
+MAX_REQUEST_SECONDS = 60
 MAX_QUESTION_LENGTH = 1000
 MAX_SEARCH_QUERY = 500
 DEFAULT_SEARCH_TOP_K = 5
