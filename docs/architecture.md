@@ -41,10 +41,12 @@ flowchart LR
 
 Модули связаны только через края: HTTP-слои проверяют права через `identity.api`, а `qa` ищет фрагменты через свой порт и адаптер к `knowledge` (ADR-006). Ядра модулей друг друга не импортируют — это проверяет контракт независимости.
 
+HTTP-край защищён в `main.py`: заголовки безопасности, строгий CSP у страницы, лимиты частоты и метрики (ADR-013). Страница `/` — статические файлы пакета `chartroom/ui`, не модуль предметной области.
+
 Точки сборки две: `main.py` (API) и `worker.py` (Celery-worker индексации). Обе берут зависимости из `bootstrap.py`.
 
 ## Ошибки
-Домен бросает наследников `DomainError`: `AuthenticationError` → 401, `PermissionDeniedError` → 403, `NotFoundError` → 404, `ConflictError` → 409, `InvalidInputError` → 422. Недоступность внешнего сервиса — `ServiceUnavailableError` → 503 с `Retry-After`: это не бизнес-ошибка, и её можно повторить. Перевод в HTTP-статусы сделан в одном месте (`main.py`), поэтому новый модуль не трогает обработчики.
+Домен бросает наследников `DomainError`: `AuthenticationError` → 401, `PermissionDeniedError` → 403, `NotFoundError` → 404, `ConflictError` → 409, `InvalidInputError` → 422. Недоступность внешнего сервиса — `ServiceUnavailableError` → 503 с `Retry-After`, превышение лимита — `TooManyRequestsError` → 429 с `Retry-After`: это не бизнес-ошибка, и её можно повторить. Перевод в HTTP-статусы сделан в одном месте (`main.py`), поэтому новый модуль не трогает обработчики.
 
 ## Как добавить модуль
 1. `chartroom/<module>/` с `domain.py`, `ports.py`, `service.py`, `api.py`, `adapters/`.
