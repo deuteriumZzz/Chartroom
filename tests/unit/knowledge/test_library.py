@@ -13,9 +13,9 @@ from chartroom.knowledge.domain.models import (
     InvalidDocumentError,
     InvalidTitleError,
     InvalidVersionLabelError,
-    Language,
 )
 from chartroom.knowledge.service import DocumentLibrary
+from chartroom.shared.language import Language
 from tests.fakes import InMemoryKnowledgeUnitOfWork, KnowledgeStore, RecordingQueue
 
 

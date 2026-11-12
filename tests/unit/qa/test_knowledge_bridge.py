@@ -1,10 +1,11 @@
 from datetime import date
 
 from chartroom.bootstrap import build_document_chunker
-from chartroom.knowledge.domain.models import DocumentUpload, Language
+from chartroom.knowledge.domain.models import DocumentUpload
 from chartroom.knowledge.service import ChunkRetriever, DocumentLibrary, Indexer
 from chartroom.qa.adapters.knowledge import KnowledgePassageRetriever
 from chartroom.qa.domain import Passage
+from chartroom.shared.language import Language
 from tests.fakes import (
     FakeEmbedder,
     InMemoryChunkIndex,

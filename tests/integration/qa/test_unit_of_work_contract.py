@@ -8,8 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from chartroom.identity.adapters.persistence import SqlIdentityUnitOfWork
 from chartroom.identity.domain import Role
 from chartroom.qa.adapters.persistence import SqlQaUnitOfWork
-from chartroom.qa.domain import Answer, AnswerLanguage, Citation, Feedback, QueryEntry
+from chartroom.qa.domain import Answer, Citation, Feedback, QueryEntry
 from chartroom.qa.ports import QaUnitOfWork
+from chartroom.shared.language import Language
 from tests.fakes import InMemoryQaUnitOfWork, QaStore
 
 UowFactory = Callable[[], QaUnitOfWork]
@@ -17,7 +18,7 @@ CITATIONS = (
     Citation(1, 7, "Fire", "Fire / 4.4", 2, "закрывают клапаны топлива"),
     Citation(1, 7, "Fire", "Fire / 4.2", None, "громкий бой"),
 )
-ANSWER = Answer("Закрыть клапаны.", AnswerLanguage.RU, False, CITATIONS, citation_warning=True)
+ANSWER = Answer("Закрыть клапаны.", Language.RU, False, CITATIONS, citation_warning=True)
 
 
 @pytest.fixture(params=["in-memory", "sql"])

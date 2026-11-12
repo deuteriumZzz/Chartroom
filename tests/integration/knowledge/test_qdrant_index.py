@@ -16,8 +16,9 @@ from chartroom.knowledge.adapters.qdrant import (
 )
 from chartroom.knowledge.domain.chunking import chunk_blocks
 from chartroom.knowledge.domain.indexing import IndexedChunk, chunk_point_id
-from chartroom.knowledge.domain.models import Block, Language
+from chartroom.knowledge.domain.models import Block
 from chartroom.shared.errors import ServiceUnavailableError
+from chartroom.shared.language import Language
 from chartroom.shared.sparse import SparseVector, bm25_query_vector, bm25_vector
 
 QDRANT_URL = os.environ.get("TEST_QDRANT_URL", "http://localhost:6333")

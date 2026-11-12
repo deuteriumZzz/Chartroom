@@ -11,9 +11,9 @@ from chartroom.knowledge.domain.models import (
     MAX_UPLOAD_BYTES,
     DocumentUpload,
     IndexingStatus,
-    Language,
 )
 from chartroom.knowledge.service import DocumentLibrary
+from chartroom.shared.language import Language
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 

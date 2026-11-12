@@ -33,9 +33,9 @@ from chartroom.knowledge.domain.models import (
     DuplicateFileError,
     DuplicateVersionError,
     IndexingStatus,
-    Language,
 )
 from chartroom.shared.database import Base, SqlAlchemyUnitOfWork
+from chartroom.shared.language import Language
 
 
 def _enum(enum_class: type[StrEnum], name: str) -> Enum:

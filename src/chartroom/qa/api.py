@@ -15,11 +15,11 @@ from chartroom.qa.domain import (
     MAX_QUESTION_LENGTH,
     MAX_TOP_K,
     Answer,
-    AnswerLanguage,
     LoggedQuery,
     Viewer,
 )
 from chartroom.qa.service import QuestionService
+from chartroom.shared.language import Language
 
 router = APIRouter(tags=["qa"])
 
@@ -55,7 +55,7 @@ class CitationResponse(BaseModel):
 
 class AnswerFields(BaseModel):
     answer: str
-    language: AnswerLanguage
+    language: Language
     refusal: bool
     citation_warning: bool  # модель сослалась на то, чего не было в контексте; такие ссылки удалены
     citations: list[CitationResponse]

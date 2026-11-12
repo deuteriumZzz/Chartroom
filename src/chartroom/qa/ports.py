@@ -4,13 +4,13 @@ from collections.abc import Sequence
 from typing import Protocol, Self
 
 from chartroom.qa.domain import (
-    AnswerLanguage,
     Feedback,
     GeneratedAnswer,
     LoggedQuery,
     Passage,
     QueryEntry,
 )
+from chartroom.shared.language import Language
 
 
 class PassageRetriever(Protocol):
@@ -24,7 +24,7 @@ class AnswerGenerator(Protocol):
     def prompt_version(self) -> str: ...
 
     async def generate(
-        self, question: str, language: AnswerLanguage, passages: Sequence[Passage]
+        self, question: str, language: Language, passages: Sequence[Passage]
     ) -> GeneratedAnswer:
         """Ответ только по переданным фрагментам. Raises ServiceUnavailableError."""
         ...

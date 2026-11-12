@@ -10,8 +10,8 @@ from chartroom.knowledge.domain.models import (
     DocumentUpload,
     DocumentVersion,
     IndexingStatus,
-    Language,
 )
+from chartroom.shared.language import Language
 from chartroom.shared.sparse import SparseVector
 
 

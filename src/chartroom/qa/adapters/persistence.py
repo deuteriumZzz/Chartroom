@@ -16,13 +16,13 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship, selectinload
 
 from chartroom.qa.domain import (
     Answer,
-    AnswerLanguage,
     Citation,
     Feedback,
     LoggedQuery,
     QueryEntry,
 )
 from chartroom.shared.database import Base, SqlAlchemyUnitOfWork
+from chartroom.shared.language import Language
 
 
 def _now() -> datetime:
@@ -62,9 +62,9 @@ class QueryRecord(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     question: Mapped[str] = mapped_column(Text)
-    language: Mapped[AnswerLanguage] = mapped_column(
+    language: Mapped[Language] = mapped_column(
         Enum(
-            AnswerLanguage,
+            Language,
             name="answer_language",
             native_enum=False,
             create_constraint=True,

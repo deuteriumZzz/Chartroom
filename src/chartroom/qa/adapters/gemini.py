@@ -8,7 +8,6 @@ from google.genai import types
 from pydantic import BaseModel
 
 from chartroom.qa.domain import (
-    AnswerLanguage,
     GeneratedAnswer,
     Passage,
     RawCitation,
@@ -16,6 +15,7 @@ from chartroom.qa.domain import (
 )
 from chartroom.shared.errors import ServiceUnavailableError
 from chartroom.shared.gemini import PER_MODEL_HTTP, generate_with_fallback
+from chartroom.shared.language import Language
 
 ANSWER_PROMPT = "answer.v2"
 
@@ -54,7 +54,7 @@ class GeminiAnswerGenerator:
         )
 
     async def generate(
-        self, question: str, language: AnswerLanguage, passages: Sequence[Passage]
+        self, question: str, language: Language, passages: Sequence[Passage]
     ) -> GeneratedAnswer:
         response, model = await generate_with_fallback(
             self._client, self._models, render_context(question, language, passages), self._config
@@ -72,6 +72,6 @@ class UnconfiguredAnswerGenerator:
     prompt_version = ANSWER_PROMPT
 
     async def generate(
-        self, question: str, language: AnswerLanguage, passages: Sequence[Passage]
+        self, question: str, language: Language, passages: Sequence[Passage]
     ) -> GeneratedAnswer:
         raise ServiceUnavailableError("Language model is not configured")

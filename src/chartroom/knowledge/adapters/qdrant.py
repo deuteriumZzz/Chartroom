@@ -6,8 +6,8 @@ from qdrant_client import AsyncQdrantClient, models
 from qdrant_client.http.exceptions import ResponseHandlingException, UnexpectedResponse
 
 from chartroom.knowledge.domain.indexing import IndexedChunk, RetrievedChunk
-from chartroom.knowledge.domain.models import Language
 from chartroom.shared.errors import ServiceUnavailableError
+from chartroom.shared.language import Language
 from chartroom.shared.sparse import SparseVector
 
 DENSE_VECTOR = "dense"

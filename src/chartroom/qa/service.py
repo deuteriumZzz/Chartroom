@@ -11,12 +11,12 @@ from chartroom.qa.domain import (
     RefusalPolicy,
     Reply,
     Viewer,
-    detect_language,
     normalize_comment,
     normalize_question,
     verify_citations,
 )
 from chartroom.qa.ports import AnswerGenerator, PassageRetriever, QaUnitOfWork
+from chartroom.shared.language import detect_language
 
 
 class QuestionService:

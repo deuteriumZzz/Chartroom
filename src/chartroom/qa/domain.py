@@ -1,32 +1,24 @@
 """Вопросы, ответы и цитаты. Чистые правила — без фреймворков и I/O."""
 
 import html
-import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from enum import StrEnum
 
 from chartroom.shared.errors import InvalidInputError, NotFoundError
+from chartroom.shared.language import Language
+from chartroom.shared.quotes import quote_in, words
 
 MAX_QUESTION_LENGTH = 1000
 DEFAULT_TOP_K = 5
 MAX_TOP_K = 20
 MAX_FEEDBACK_COMMENT = 1000
 MAX_HISTORY_PAGE = 100
-_WORD = re.compile(r"\w+")
-# Доля кириллицы, начиная с которой вопрос считается русским: «Что такое ECDIS MOB?» — русский.
-_RUSSIAN_SHARE = 0.3
-
-
-class AnswerLanguage(StrEnum):
-    RU = "ru"
-    EN = "en"
 
 
 REFUSAL_TEXT = {
-    AnswerLanguage.RU: "В загруженных документах ответа нет.",
-    AnswerLanguage.EN: "The uploaded documents do not contain an answer.",
+    Language.RU: "В загруженных документах ответа нет.",
+    Language.EN: "The uploaded documents do not contain an answer.",
 }
 
 
@@ -88,13 +80,13 @@ class GeneratedAnswer:
 @dataclass(frozen=True, slots=True)
 class Answer:
     text: str
-    language: AnswerLanguage
+    language: Language
     refusal: bool
     citations: tuple[Citation, ...]
     citation_warning: bool = False  # модель сослалась на то, чего нет в контексте (FR-6)
 
     @classmethod
-    def refused(cls, language: AnswerLanguage, citation_warning: bool = False) -> "Answer":
+    def refused(cls, language: Language, citation_warning: bool = False) -> "Answer":
         return cls(REFUSAL_TEXT[language], language, True, (), citation_warning)
 
 
@@ -165,17 +157,7 @@ def normalize_question(raw: str) -> str:
     return question
 
 
-def detect_language(text: str) -> AnswerLanguage:
-    letters = [c for c in text if c.isalpha()]
-    cyrillic = sum("Ѐ" <= c <= "ӿ" for c in letters)
-    return (
-        AnswerLanguage.RU
-        if letters and cyrillic / len(letters) >= _RUSSIAN_SHARE
-        else AnswerLanguage.EN
-    )
-
-
-def render_context(question: str, language: AnswerLanguage, passages: Sequence[Passage]) -> str:
+def render_context(question: str, language: Language, passages: Sequence[Passage]) -> str:
     """Вопрос и фрагменты для модели.
 
     Всё внутри тегов — недоверенные данные. Экранирование не даёт тексту документа закрыть
@@ -191,15 +173,6 @@ def render_context(question: str, language: AnswerLanguage, passages: Sequence[P
     return "\n".join(lines)
 
 
-def _words(text: str) -> tuple[str, ...]:
-    return tuple(_WORD.findall(text.casefold()))
-
-
-def _contains(haystack: tuple[str, ...], needle: tuple[str, ...]) -> bool:
-    size = len(needle)
-    return any(haystack[i : i + size] == needle for i in range(len(haystack) - size + 1))
-
-
 def verify_citations(
     raw: Sequence[RawCitation], passages: Sequence[Passage]
 ) -> tuple[tuple[Citation, ...], bool]:
@@ -213,14 +186,14 @@ def verify_citations(
     seen: set[tuple[int, tuple[str, ...]]] = set()
     warning = False
     for item in raw:
-        quote = _words(item.quote)
         passage = passages[item.passage - 1] if 1 <= item.passage <= len(passages) else None
-        if passage is None or not quote or not _contains(_words(passage.text), quote):
+        if passage is None or not quote_in(passage.text, item.quote):
             warning = True
             continue
-        if (item.passage, quote) in seen:
+        key = (item.passage, words(item.quote))
+        if key in seen:
             continue
-        seen.add((item.passage, quote))
+        seen.add(key)
         citations.append(
             Citation(
                 passage.document_id,

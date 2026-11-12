@@ -3,7 +3,6 @@ import pytest
 from chartroom.qa.domain import (
     REFUSAL_TEXT,
     Answer,
-    AnswerLanguage,
     Feedback,
     GeneratedAnswer,
     InvalidFeedbackError,
@@ -16,6 +15,7 @@ from chartroom.qa.domain import (
 )
 from chartroom.qa.service import QuestionService
 from chartroom.shared.errors import ServiceUnavailableError
+from chartroom.shared.language import Language
 from tests.fakes import InMemoryQaUnitOfWork, QaStore, ScriptedGenerator, StaticPassageRetriever
 
 POLICY = RefusalPolicy(min_similarity=0.6)
@@ -56,14 +56,14 @@ async def test_answer_is_generated_from_passages_with_verified_citations() -> No
     assert (answer.text, answer.refusal, answer.language, answer.citation_warning) == (
         "Close the fuel valves.",
         False,
-        AnswerLanguage.EN,
+        Language.EN,
         False,
     )
     assert [(c.section_path, c.quote) for c in answer.citations] == [
         ("Fire / 4.4 Engine room", "Close the fuel valves")
     ]
     assert retriever.calls == [("What to do with fuel valves?", 2)]
-    assert generator.calls == [("What to do with fuel valves?", AnswerLanguage.EN, [VALVES, ALARM])]
+    assert generator.calls == [("What to do with fuel valves?", Language.EN, [VALVES, ALARM])]
 
 
 @pytest.mark.parametrize(
@@ -75,7 +75,7 @@ async def test_refusal_without_calling_the_model(passages: list[Passage]) -> Non
     answer = await service.ask("Как часто проводится учение по оставлению судна?")
     assert (answer.refusal, answer.text, answer.citations) == (
         True,
-        REFUSAL_TEXT[AnswerLanguage.RU],
+        REFUSAL_TEXT[Language.RU],
         (),
     )
     assert generator.calls == []
@@ -110,7 +110,7 @@ async def test_model_refusal_or_unsupported_answer_becomes_refusal(
     answer = await service.ask("fuel valves?")
     assert (answer.refusal, answer.text, answer.citation_warning) == (
         True,
-        REFUSAL_TEXT[AnswerLanguage.EN],
+        REFUSAL_TEXT[Language.EN],
         warning,
     )
 

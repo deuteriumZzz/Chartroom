@@ -6,6 +6,7 @@ from datetime import date, datetime
 from enum import StrEnum
 
 from chartroom.shared.errors import ConflictError, InvalidInputError, NotFoundError
+from chartroom.shared.language import Language
 
 
 class DocumentFormat(StrEnum):
@@ -13,11 +14,6 @@ class DocumentFormat(StrEnum):
     DOCX = "docx"
     MARKDOWN = "md"
     TEXT = "txt"
-
-
-class Language(StrEnum):
-    RU = "ru"
-    EN = "en"
 
 
 class IndexingStatus(StrEnum):

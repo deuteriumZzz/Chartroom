@@ -17,9 +17,9 @@ from chartroom.knowledge.domain.models import (
     DuplicateFileError,
     DuplicateVersionError,
     IndexingStatus,
-    Language,
 )
 from chartroom.knowledge.ports import KnowledgeUnitOfWork
+from chartroom.shared.language import Language
 from chartroom.shared.sparse import bm25_vector
 from tests.fakes import InMemoryKnowledgeUnitOfWork, KnowledgeStore
 

@@ -4,9 +4,10 @@ import pytest
 
 from chartroom.bootstrap import build_document_chunker
 from chartroom.knowledge.adapters.gemini import UnconfiguredQueryEmbedder
-from chartroom.knowledge.domain.models import DocumentUpload, Language
+from chartroom.knowledge.domain.models import DocumentUpload
 from chartroom.knowledge.service import ChunkRetriever, DocumentLibrary, Indexer
 from chartroom.shared.errors import ServiceUnavailableError
+from chartroom.shared.language import Language
 from tests.fakes import (
     FakeEmbedder,
     InMemoryChunkIndex,

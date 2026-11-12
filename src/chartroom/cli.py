@@ -32,10 +32,11 @@ from chartroom.evaluation.adapters.qa import QaAnswerProbe, QaRetrievalProbe
 from chartroom.evaluation.domain import CaseResult, GoldenCase, summarize
 from chartroom.evaluation.service import DEFAULT_K, Evaluator
 from chartroom.identity.domain import Role, User
-from chartroom.knowledge.domain.models import DocumentUpload, Language
+from chartroom.knowledge.domain.models import DocumentUpload
 from chartroom.qa.adapters.gemini import ANSWER_PROMPT
 from chartroom.shared.config import get_settings
 from chartroom.shared.errors import ConflictError, DomainError, ServiceUnavailableError
+from chartroom.shared.language import Language
 
 
 async def _register(email: str, password: str, role: Role) -> User:

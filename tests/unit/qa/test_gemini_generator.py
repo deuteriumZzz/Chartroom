@@ -13,8 +13,9 @@ from chartroom.qa.adapters.gemini import (
     _CitationSchema,
     load_prompt,
 )
-from chartroom.qa.domain import AnswerLanguage, GeneratedAnswer, Passage, RawCitation
+from chartroom.qa.domain import GeneratedAnswer, Passage, RawCitation
 from chartroom.shared.errors import ServiceUnavailableError
+from chartroom.shared.language import Language
 
 PASSAGE = Passage(1, 7, "Fire", "Fire / 4.4", None, "Close the fuel valves.", 0.03, 0.8)
 SCHEMA = _AnswerSchema(
@@ -47,7 +48,7 @@ def _generator(
 
 
 async def _ask(generator: GeminiAnswerGenerator) -> GeneratedAnswer:
-    return await generator.generate("fuel?", AnswerLanguage.EN, [PASSAGE])
+    return await generator.generate("fuel?", Language.EN, [PASSAGE])
 
 
 async def test_structured_answer_is_requested_from_the_first_model() -> None:
@@ -82,7 +83,7 @@ def test_chain_must_not_be_empty() -> None:
 
 async def test_unconfigured_generator_is_service_unavailable() -> None:
     with pytest.raises(ServiceUnavailableError, match="not configured"):
-        await UnconfiguredAnswerGenerator().generate("q", AnswerLanguage.EN, [PASSAGE])
+        await UnconfiguredAnswerGenerator().generate("q", Language.EN, [PASSAGE])
 
 
 def test_prompt_states_the_safety_rules() -> None:

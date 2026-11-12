@@ -21,7 +21,6 @@ from chartroom.knowledge.domain.models import (
     EmptyDocumentError,
     FileTooLargeError,
     IndexingStatus,
-    Language,
     detect_format,
     ensure_new_version,
     normalize_label,
@@ -39,6 +38,7 @@ from chartroom.knowledge.ports import (
     QueryEmbedder,
 )
 from chartroom.shared.errors import DomainError, ServiceUnavailableError
+from chartroom.shared.language import Language
 from chartroom.shared.sparse import bm25_query_vector, bm25_vector
 
 UowFactory = Callable[[], KnowledgeUnitOfWork]

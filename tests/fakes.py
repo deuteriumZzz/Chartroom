@@ -17,10 +17,8 @@ from chartroom.knowledge.domain.models import (
     DuplicateFileError,
     DuplicateVersionError,
     IndexingStatus,
-    Language,
 )
 from chartroom.qa.domain import (
-    AnswerLanguage,
     Feedback,
     GeneratedAnswer,
     LoggedQuery,
@@ -34,6 +32,7 @@ from chartroom.reports.domain import (
     ReportTemplate,
 )
 from chartroom.shared.errors import ServiceUnavailableError
+from chartroom.shared.language import Language
 from chartroom.shared.schema import Issue, Schema
 from chartroom.shared.sparse import SparseVector
 
@@ -299,10 +298,10 @@ class ScriptedGenerator:
 
     def __init__(self, answer: GeneratedAnswer) -> None:
         self.answer = answer
-        self.calls: list[tuple[str, AnswerLanguage, list[Passage]]] = []
+        self.calls: list[tuple[str, Language, list[Passage]]] = []
 
     async def generate(
-        self, question: str, language: AnswerLanguage, passages: Sequence[Passage]
+        self, question: str, language: Language, passages: Sequence[Passage]
     ) -> GeneratedAnswer:
         self.calls.append((question, language, list(passages)))
         return self.answer
