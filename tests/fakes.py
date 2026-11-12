@@ -27,6 +27,14 @@ from chartroom.qa.domain import (
     Passage,
     QueryEntry,
 )
+from chartroom.reports.domain import (
+    Issue,
+    Report,
+    ReportData,
+    ReportStatus,
+    ReportTemplate,
+    Schema,
+)
 from chartroom.shared.errors import ServiceUnavailableError
 from chartroom.shared.sparse import SparseVector
 
@@ -362,3 +370,112 @@ class InMemoryQaUnitOfWork:
 
     async def commit(self) -> None:
         self._store.queries = dict(self._pending.queries)
+
+
+@dataclass
+class ReportsStore:
+    templates: dict[int, ReportTemplate] = field(default_factory=dict)
+    reports: dict[int, Report] = field(default_factory=dict)
+
+    def copy(self) -> "ReportsStore":
+        return ReportsStore(dict(self.templates), dict(self.reports))
+
+
+class InMemoryTemplateRepository:
+    def __init__(self, store: ReportsStore) -> None:
+        self._store = store
+
+    async def get(self, template_id: int) -> ReportTemplate:
+        return self._store.templates[template_id]
+
+    async def latest(self, name: str) -> ReportTemplate | None:
+        versions = [t for t in self._store.templates.values() if t.name == name]
+        return max(versions, key=lambda t: t.version, default=None)
+
+    async def list_latest(self) -> list[ReportTemplate]:
+        names = sorted({t.name for t in self._store.templates.values()})
+        return [t for name in names if (t := await self.latest(name)) is not None]
+
+    async def add(self, name: str, title: str, schema: Schema) -> ReportTemplate:
+        current = await self.latest(name)
+        template = ReportTemplate(
+            max(self._store.templates, default=0) + 1,
+            name,
+            title,
+            schema,
+            (current.version if current else 0) + 1,
+        )
+        self._store.templates[template.id] = template
+        return template
+
+
+class InMemoryReportRepository:
+    def __init__(self, store: ReportsStore) -> None:
+        self._store = store
+
+    async def get(self, report_id: int) -> Report | None:
+        return self._store.reports.get(report_id)
+
+    async def add(
+        self,
+        template_id: int,
+        user_id: int,
+        source_text: str,
+        data: ReportData,
+        status: ReportStatus,
+        issues: tuple[Issue, ...],
+    ) -> Report:
+        report = Report(
+            max(self._store.reports, default=0) + 1,
+            template_id,
+            user_id,
+            source_text,
+            data,
+            status,
+            issues,
+            datetime.now(UTC),
+        )
+        self._store.reports[report.id] = report
+        return report
+
+    async def update(
+        self, report_id: int, data: ReportData, status: ReportStatus, issues: tuple[Issue, ...]
+    ) -> Report:
+        report = replace(self._store.reports[report_id], data=data, status=status, issues=issues)
+        self._store.reports[report_id] = report
+        return report
+
+
+class InMemoryReportsUnitOfWork:
+    """Та же транзакционность, что у SQL: изменения видны снаружи только после commit()."""
+
+    templates: InMemoryTemplateRepository
+    reports: InMemoryReportRepository
+
+    def __init__(self, store: ReportsStore) -> None:
+        self._store = store
+
+    async def __aenter__(self) -> Self:
+        self._pending = self._store.copy()
+        self.templates = InMemoryTemplateRepository(self._pending)
+        self.reports = InMemoryReportRepository(self._pending)
+        return self
+
+    async def __aexit__(self, *exc_info: object) -> None:
+        return None
+
+    async def commit(self) -> None:
+        committed = self._pending.copy()
+        self._store.templates, self._store.reports = committed.templates, committed.reports
+
+
+class ScriptedExtractor:
+    """Порт ReportExtractor для тестов: заданные поля и журнал вызовов."""
+
+    def __init__(self, data: ReportData) -> None:
+        self.data = data
+        self.calls: list[tuple[str, str]] = []
+
+    async def extract(self, text: str, template: ReportTemplate) -> ReportData:
+        self.calls.append((text, template.name))
+        return dict(self.data)
