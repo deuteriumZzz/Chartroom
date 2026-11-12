@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 320" role="img" aria-labelledby="t d">
+  <title id="t">Chartroom</title>
+  <desc id="d">Судно на волнах, компас и название проекта Chartroom</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0b1f3a"/>
+      <stop offset="1" stop-color="#1d4e7a"/>
+    </linearGradient>
+    <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1f6f9c"/>
+      <stop offset="1" stop-color="#0a2a4a"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="320" fill="url(#sky)"/>
+  <!-- сетка морской карты -->
+  <g stroke="#ffffff" stroke-opacity=".07" stroke-width="1">
+    <path d="M0 60H1200M0 120H1200M0 180H1200M0 240H1200"/>
+    <path d="M150 0V320M300 0V320M450 0V320M600 0V320M750 0V320M900 0V320M1050 0V320"/>
+  </g>
+  <!-- компасная роза -->
+  <g transform="translate(1030 120)" fill="none" stroke="#e8c872" stroke-width="2">
+    <circle r="70" stroke-opacity=".9"/>
+    <circle r="54" stroke-opacity=".4"/>
+    <path d="M0-92L12-12L0 0L-12-12Z" fill="#e8c872"/>
+    <path d="M0 92L12 12L0 0L-12 12Z" fill="#e8c872" fill-opacity=".35"/>
+    <path d="M-92 0L-12-12L0 0L-12 12Z" fill="#e8c872" fill-opacity=".35"/>
+    <path d="M92 0L12-12L0 0L12 12Z" fill="#e8c872" fill-opacity=".35"/>
+    <g fill="#e8c872" stroke="none" font-family="Georgia, serif" font-size="16" text-anchor="middle">
+      <text y="-100">N</text><text y="115">S</text><text x="-100" y="6">W</text><text x="100" y="6">E</text>
+    </g>
+  </g>
+  <!-- заголовок -->
+  <g font-family="'Helvetica Neue', Arial, sans-serif" fill="#ffffff">
+    <text x="70" y="140" font-size="76" font-weight="700" letter-spacing="2">Chartroom</text>
+    <text x="74" y="184" font-size="24" fill="#bcd7ec">Ассистент по судовым процедурам SMS/ISM</text>
+    <text x="74" y="218" font-size="18" fill="#e8c872" letter-spacing="1">ПОИСК · ЦИТАТЫ · ОТЧЁТЫ · АГЕНТ</text>
+  </g>
+  <!-- судно -->
+  <g transform="translate(640 150)">
+    <path d="M0 80H260L235 118H30Z" fill="#c9372c"/>
+    <path d="M10 80H250V92H8Z" fill="#fff" fill-opacity=".85"/>
+    <rect x="150" y="30" width="70" height="50" fill="#f4f6f8"/>
+    <rect x="165" y="8" width="45" height="22" fill="#f4f6f8"/>
+    <g fill="#1d4e7a"><rect x="160" y="40" width="10" height="10"/><rect x="178" y="40" width="10" height="10"/><rect x="196" y="40" width="10" height="10"/><rect x="176" y="14" width="26" height="9"/></g>
+    <rect x="190" y="-18" width="14" height="28" fill="#c9372c"/><rect x="190" y="-18" width="14" height="7" fill="#111"/>
+    <g fill="#8fb4cf"><rect x="30" y="52" width="26" height="28"/><rect x="60" y="52" width="26" height="28" fill="#e8c872"/><rect x="90" y="52" width="26" height="28" fill="#c9372c"/><rect x="120" y="52" width="26" height="28" fill="#8fb4cf"/></g>
+  </g>
+  <!-- море -->
+  <path d="M0 262C100 244 200 280 300 262S500 244 600 262 800 280 900 262 1100 244 1200 262V320H0Z" fill="url(#sea)"/>
+  <path d="M0 284C100 268 200 300 300 284S500 268 600 284 800 300 900 284 1100 268 1200 284" fill="none" stroke="#ffffff" stroke-opacity=".25" stroke-width="2"/>
+  <path d="M0 302C120 290 220 314 340 302S560 290 680 302 920 314 1040 302 1160 290 1200 298" fill="none" stroke="#ffffff" stroke-opacity=".15" stroke-width="2"/>
+</svg>
