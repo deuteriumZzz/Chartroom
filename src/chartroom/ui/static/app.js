@@ -18,10 +18,48 @@ async function api(path, options = {}) {
   if (!response.ok) {
     if (response.status === 429) throw new Error("Слишком много запросов, попробуйте через минуту");
     if (response.status === 503) throw new Error("Сервис временно недоступен, повторите позже");
-    throw new Error(typeof body.detail === "string" ? body.detail : "Запрос не выполнен");
+    throw new Error(typeof body.detail === "string" ? ru(body.detail) : "Запрос не выполнен");
   }
   return body;
 }
+
+// Сообщения сервера (английские, это контракт API) показываем по-русски.
+const MESSAGES = {
+  "Incorrect email or password": "Неверный email или пароль",
+  "Invalid or expired token": "Сессия истекла, войдите снова",
+  "Insufficient role": "Недостаточно прав",
+  "Report not found": "Отчёт не найден",
+  "Report template not found": "Шаблон не найден",
+  "Accepted report cannot be changed": "Принятый отчёт нельзя изменить",
+  "Report with issues cannot be accepted": "Отчёт с замечаниями нельзя принять",
+  "Only a captain or admin can accept a report": "Принять отчёт может только капитан или администратор",
+  "Not authenticated": "Требуется вход",
+  "required": "обязательное поле",
+  "unknown field": "неизвестное поле",
+  "must be a string": "должно быть текстом",
+  "must be a date (YYYY-MM-DD)": "должна быть дата (ГГГГ-ММ-ДД)",
+  "must be a time (HH:MM)": "должно быть время (ЧЧ:ММ)",
+  "must be true or false": "должно быть «да» или «нет»",
+  "must be a number": "должно быть числом",
+  "must be an integer": "должно быть целым числом",
+};
+const PATTERNS = [
+  [/^must be at least (.+)$/, "не меньше $1"],
+  [/^must be at most (.+)$/, "не больше $1"],
+  [/^must be one of: (.+)$/, "одно из: $1"],
+  [/^File is larger than (\d+) MB$/, "Файл больше $1 МБ"],
+];
+function ru(message, properties = {}) {
+  if (MESSAGES[message]) return MESSAGES[message];
+  const exceed = message.match(/^must not exceed (.+)$/);
+  if (exceed) return "не больше, чем «" + (properties[exceed[1]]?.title || exceed[1]) + "»";
+  for (const [pattern, replacement] of PATTERNS) if (pattern.test(message)) return message.replace(pattern, replacement);
+  return message;
+}
+const STATUS = { draft: "черновик", needs_review: "требует проверки", accepted: "принят", pending: "в очереди", indexing: "индексируется", indexed: "проиндексирован", failed: "ошибка" };
+// Коды значений из шаблонов (enum) показываем названиями; в API уходит код.
+const CODES = { fire: "Пожар", abandon_ship: "Оставление судна", man_overboard: "Человек за бортом", enclosed_space: "Замкнутое помещение", oil_spill: "Разлив нефти" };
+const status = (value) => STATUS[value] || value;
 
 const json = (data) => ({ headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
 function show(box, ...nodes) { box.replaceChildren(...nodes); }
@@ -88,7 +126,7 @@ function botMessage(data) {
   if (data.tool_calls && data.tool_calls.length) {
     const list = el("ul");
     for (const t of data.tool_calls) list.append(el("li", t.name + " " + JSON.stringify(t.args) + (t.ok ? "" : " — " + t.error)));
-    msg.append(el("small", "Вызовы инструментов:"), list);
+    msg.append(el("small", "Вызовы инструментов агента:"), list);
   }
   if (data.query_id) msg.append(feedbackNode(data.query_id));  // отзывы есть только у обычных вопросов
   return msg;
@@ -120,7 +158,7 @@ function fieldInput(name, spec, value) {
   if (spec.enum || spec.type === "boolean") {
     input = el("select");
     input.append(Object.assign(el("option", "—"), { value: "" }));
-    for (const option of spec.enum || [true, false]) input.append(Object.assign(el("option", String(option)), { value: String(option) }));
+    for (const option of spec.enum || [true, false]) input.append(Object.assign(el("option", option === true ? "да" : option === false ? "нет" : CODES[option] || String(option)), { value: String(option) }));
   } else {
     input = el("input");
     input.type = spec.format === "date" ? "date" : spec.format === "time" ? "time" : ["number", "integer"].includes(spec.type) ? "number" : "text";
@@ -141,14 +179,14 @@ function renderReport(report) {
   const schema = templates.find((t) => t.id === report.template_id).schema;
   const fields = el("div", undefined, "fields");
   for (const [name, spec] of Object.entries(schema.properties)) {
-    const label = el("label", name + (schema.required?.includes(name) ? " *" : ""));
+    const label = el("label", (spec.title || name) + (schema.required?.includes(name) ? " *" : ""));
     label.htmlFor = "f-" + name;
     fields.append(label, fieldInput(name, spec, report.data[name]));
   }
-  const status = el("p", undefined, report.issues.length ? "warn" : "ok");
-  status.append("Отчёт №" + report.id + " ", el("span", report.status, "badge"));
+  const heading = el("p", undefined, report.issues.length ? "warn" : "ok");
+  heading.append("Отчёт №" + report.id + " ", el("span", status(report.status), "badge"));
   const issues = el("ul");
-  for (const i of report.issues) issues.append(el("li", i.field + ": " + i.message, "bad"));
+  for (const i of report.issues) issues.append(el("li", (schema.properties[i.field]?.title || i.field) + ": " + ru(i.message, schema.properties), "bad"));
 
   const save = async (accept) => {
     const data = {};
@@ -165,12 +203,12 @@ function renderReport(report) {
   saveButton.type = "button"; saveButton.addEventListener("click", () => save(false));
   actions.append(saveButton);
   if (report.status !== "accepted") {
-    const accept = el("button", "Принять (captain / admin)");
+    const accept = el("button", "Принять (капитан / администратор)");
     accept.type = "button"; accept.addEventListener("click", () => save(true));
     actions.append(accept);
   }
   const error = el("p", "", "bad"); error.id = "report-error";
-  show($("report-result"), status, report.issues.length ? issues : el("p", "Замечаний нет.", "ok"), fields, actions, error);
+  show($("report-result"), heading, report.issues.length ? issues : el("p", "Замечаний нет.", "ok"), fields, actions, error);
 }
 
 $("report-form").addEventListener("submit", async (e) => {
@@ -185,7 +223,7 @@ $("report-form").addEventListener("submit", async (e) => {
 
 function renderStatus(documentId, version) {
   const line = el("p", undefined, version.status === "failed" ? "bad" : "ok");
-  line.append("Документ №" + documentId + ", версия " + version.label + ": ", el("span", version.status, "badge"));
+  line.append("Документ №" + documentId + ", версия " + version.label + ": ", el("span", status(version.status), "badge"));
   if (version.error) line.append(" — " + version.error);
   const refresh = el("button", "Обновить статус");
   refresh.type = "button";
