@@ -1,6 +1,6 @@
 {
   "name": "mooring_operation",
-  "title": "Швартовная операция — поля подтвердить автором",
+  "title": "Швартовная операция",
   "schema": {
     "type": "object",
     "properties": {

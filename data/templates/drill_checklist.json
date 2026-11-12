@@ -1,6 +1,6 @@
 {
   "name": "drill_checklist",
-  "title": "Чек-лист учебной тревоги — поля подтвердить автором",
+  "title": "Чек-лист учебной тревоги",
   "schema": {
     "type": "object",
     "properties": {

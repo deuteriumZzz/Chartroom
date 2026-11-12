@@ -1,6 +1,6 @@
 {
   "name": "noon_report",
-  "title": "Суточный отчёт (полдень) — поля подтвердить автором",
+  "title": "Суточный отчёт (полдень)",
   "schema": {
     "type": "object",
     "properties": {

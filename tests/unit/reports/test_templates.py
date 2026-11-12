@@ -22,7 +22,7 @@ def test_three_starter_templates_with_supported_schemas() -> None:
     assert [p.stem for p in TEMPLATES] == ["drill_checklist", "mooring_operation", "noon_report"]
     for path in TEMPLATES:
         spec = json.loads(path.read_text(encoding="utf-8"))
-        assert spec["name"] == path.stem and "подтвердить автором" in spec["title"]
+        assert spec["name"] == path.stem
         check_schema(spec["schema"])
 
 
