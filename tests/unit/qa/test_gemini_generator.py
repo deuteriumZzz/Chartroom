@@ -1,10 +1,9 @@
 from types import SimpleNamespace
 from typing import Any, cast
 
-import httpx
 import pytest
 from google import genai
-from google.genai import errors, types
+from google.genai import types
 
 from chartroom.qa.adapters.gemini import (
     ANSWER_PROMPT,
@@ -23,7 +22,6 @@ SCHEMA = _AnswerSchema(
     answer=" Close the valves. ",
     citations=[_CitationSchema(passage=1, quote="Close the fuel valves")],
 )
-OVERLOADED = errors.ServerError(503, {"error": {"message": "high demand"}})
 
 
 class StubModels:
@@ -67,38 +65,9 @@ async def test_structured_answer_is_requested_from_the_first_model() -> None:
     )
     assert config.system_instruction == load_prompt(ANSWER_PROMPT)
     assert config.http_options is not None and config.http_options.timeout == 20_000
+    assert [c["model"] for c in models.calls] == ["primary"]
     assert '<passage id="1"' in call["contents"]
     assert generator.prompt_version == "answer.v2"
-
-
-@pytest.mark.parametrize(
-    "failure",
-    [
-        OVERLOADED,
-        errors.ClientError(429, {"error": {"message": "quota"}}),
-        httpx.ReadTimeout("slow"),
-    ],
-)
-async def test_overloaded_model_falls_back_to_the_next(failure: Exception) -> None:
-    models = StubModels({"primary": failure, "fallback": SCHEMA})
-    answer = await _ask(_generator(models))
-    assert answer.model == "fallback"  # в журнал попадёт модель, которая действительно ответила
-    assert [c["model"] for c in models.calls] == ["primary", "fallback"]
-
-
-async def test_whole_chain_down_is_service_unavailable() -> None:
-    models = StubModels({"primary": OVERLOADED, "fallback": httpx.ConnectError("down")})
-    with pytest.raises(ServiceUnavailableError, match="Language model is unavailable"):
-        await _ask(_generator(models))
-
-
-async def test_our_own_request_error_is_not_retried_on_other_models() -> None:
-    models = StubModels(
-        {"primary": errors.ClientError(400, {"error": {"message": "bad"}}), "fallback": SCHEMA}
-    )
-    with pytest.raises(ServiceUnavailableError):
-        await _ask(_generator(models))
-    assert [c["model"] for c in models.calls] == ["primary"]
 
 
 async def test_malformed_model_output_is_rejected() -> None:

@@ -1,12 +1,10 @@
 """Генерация ответа через Gemini API со structured output."""
 
-import logging
 from collections.abc import Sequence
 from importlib import resources
 
-import httpx
 from google import genai
-from google.genai import errors, types
+from google.genai import types
 from pydantic import BaseModel
 
 from chartroom.qa.domain import (
@@ -17,13 +15,9 @@ from chartroom.qa.domain import (
     render_context,
 )
 from chartroom.shared.errors import ServiceUnavailableError
+from chartroom.shared.gemini import PER_MODEL_HTTP, generate_with_fallback
 
 ANSWER_PROMPT = "answer.v2"
-# Одна попытка на модель с коротким таймаутом: вторым шансом служит следующая модель цепочки,
-# а не повтор к перегруженной. Худший случай — около 20 с на модель, а не минуты ожидания.
-_PER_MODEL = types.HttpOptions(timeout=20_000, retry_options=types.HttpRetryOptions(attempts=1))
-
-logger = logging.getLogger(__name__)
 
 
 def load_prompt(version: str) -> str:
@@ -56,41 +50,20 @@ class GeminiAnswerGenerator:
             response_mime_type="application/json",
             response_schema=_AnswerSchema,
             temperature=0.0,  # ответ по документам, а не творчество
-            http_options=_PER_MODEL,
+            http_options=PER_MODEL_HTTP,
         )
 
     async def generate(
         self, question: str, language: AnswerLanguage, passages: Sequence[Passage]
     ) -> GeneratedAnswer:
-        contents = render_context(question, language, passages)
-        for model in self._models:
-            try:
-                response = await self._client.aio.models.generate_content(
-                    model=model, contents=contents, config=self._config
-                )
-            except (errors.ServerError, httpx.HTTPError) as e:
-                logger.warning("generation model %s failed: %s", model, _describe(e))
-                continue  # перегрузка или сбой провайдера — пробуем следующую модель
-            except errors.ClientError as e:
-                logger.warning("generation model %s failed: %s", model, _describe(e))
-                if e.code == 429:
-                    continue  # исчерпана квота этой модели — следующая
-                raise ServiceUnavailableError("Language model is unavailable") from e
-            return _parse(response, model)
-        raise ServiceUnavailableError("Language model is unavailable")
-
-
-def _describe(error: Exception) -> str:
-    code = getattr(error, "code", None)
-    return f"{type(error).__name__} {code}" if code else type(error).__name__
-
-
-def _parse(response: types.GenerateContentResponse, model: str) -> GeneratedAnswer:
-    parsed = response.parsed
-    if not isinstance(parsed, _AnswerSchema):
-        raise ServiceUnavailableError("Language model returned a malformed answer")
-    citations = tuple(RawCitation(c.passage, c.quote) for c in parsed.citations)
-    return GeneratedAnswer(parsed.answer.strip(), citations, parsed.refusal, model)
+        response, model = await generate_with_fallback(
+            self._client, self._models, render_context(question, language, passages), self._config
+        )
+        parsed = response.parsed
+        if not isinstance(parsed, _AnswerSchema):
+            raise ServiceUnavailableError("Language model returned a malformed answer")
+        citations = tuple(RawCitation(c.passage, c.quote) for c in parsed.citations)
+        return GeneratedAnswer(parsed.answer.strip(), citations, parsed.refusal, model)
 
 
 class UnconfiguredAnswerGenerator:
