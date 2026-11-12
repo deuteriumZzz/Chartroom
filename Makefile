@@ -1,4 +1,4 @@
-.PHONY: up lint test user seed eval
+.PHONY: up lint test user seed eval eval-agent
 
 up:
 	docker compose up --build
@@ -31,3 +31,11 @@ eval:
 	DATABASE_URL=postgresql+asyncpg://chartroom:chartroom@localhost:5432/chartroom \
 	QDRANT_URL=http://localhost:6333 \
 	uv run python -m chartroom.cli eval --as $(or $(EVAL_USER),admin@ship.test) $(ARGS)
+
+# Eval агента (FR-23) по eval/agent_golden.yaml. По умолчанию от имени офицера: сценарии с prompt
+# injection и чужими отчётами проверяют настоящие права, а не права admin.
+eval-agent:
+	DATABASE_URL=postgresql+asyncpg://chartroom:chartroom@localhost:5432/chartroom \
+	QDRANT_URL=http://localhost:6333 \
+	uv run python -m chartroom.cli eval --agent --golden eval/agent_golden.yaml \
+	--as $(or $(EVAL_USER),officer@ship.test)

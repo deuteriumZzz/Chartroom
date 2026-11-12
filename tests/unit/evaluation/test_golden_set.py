@@ -21,10 +21,11 @@ def test_golden_set_has_the_specified_mix() -> None:
     assert len({case.id for case in CASES}) == len(CASES)
 
 
-def test_every_expected_section_exists_in_the_corpus() -> None:
+def corpus_sections() -> dict[str, list[str]]:
+    """Название документа → пути разделов его фрагментов, как их видит поиск."""
     corpus = ROOT / "data" / "corpus"
     manifest = json.loads((corpus / "manifest.json").read_text(encoding="utf-8"))
-    sections = {
+    return {
         entry["title"]: [
             chunk.section_path
             for chunk in build_document_chunker().chunk(
@@ -33,6 +34,10 @@ def test_every_expected_section_exists_in_the_corpus() -> None:
         ]
         for entry in manifest
     }
+
+
+def test_every_expected_section_exists_in_the_corpus() -> None:
+    sections = corpus_sections()
     for case in CASES:
         if case.kind is CaseKind.UNANSWERABLE:
             assert case.document is None and case.section is None, case.id

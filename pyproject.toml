@@ -111,6 +111,8 @@ ignore_imports = [
     "chartroom.agent.adapters.reports -> chartroom.reports.domain",
     "chartroom.agent.adapters.reports -> chartroom.reports.service",
     "chartroom.agent.adapters.documents -> chartroom.knowledge.service",
+    "chartroom.evaluation.adapters.agent -> chartroom.agent.domain",
+    "chartroom.evaluation.adapters.agent -> chartroom.agent.service",
 ]
 
 [tool.coverage.run]

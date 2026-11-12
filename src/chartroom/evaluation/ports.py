@@ -2,7 +2,7 @@
 
 from typing import Protocol
 
-from chartroom.evaluation.domain import Hit, Outcome
+from chartroom.evaluation.domain import AgentOutcome, Hit, Outcome
 
 
 class RetrievalProbe(Protocol):
@@ -12,4 +12,10 @@ class RetrievalProbe(Protocol):
 class AnswerProbe(Protocol):
     async def outcome(self, question: str) -> Outcome:
         """Raises ServiceUnavailableError, если ответ получить нельзя (лимит, перегрузка)."""
+        ...
+
+
+class AgentProbe(Protocol):
+    async def run(self, question: str) -> AgentOutcome:
+        """Raises ServiceUnavailableError, если агент не смог получить ответ модели."""
         ...

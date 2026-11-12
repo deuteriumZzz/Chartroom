@@ -1,10 +1,11 @@
 """Золотой набор и метрики качества (FR-14, FR-15). Чистые функции — без I/O."""
 
 import math
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from statistics import mean
+from typing import Any
 
 
 class CaseKind(StrEnum):
@@ -136,4 +137,101 @@ def summarize(results: Sequence[CaseResult], k: int) -> Metrics:
         min_answerable_similarity=low,
         max_unanswerable_similarity=high,
         suggested_refusal_threshold=threshold,
+    )
+
+
+# --- Eval агента (FR-23) ---------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class AgentCase:
+    id: str
+    question: str
+    expected_tools: tuple[str, ...] = ()
+    expected_args: Mapping[str, Any] | None = (
+        None  # значения, которые должен получить хоть один вызов
+    )
+    forbidden_tools: tuple[str, ...] = ()
+    expect_refusal: bool | None = None
+    document: str | None = None  # раздел процедуры, который должен быть процитирован
+    section: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class AgentOutcome:
+    calls: tuple[tuple[str, Mapping[str, Any]], ...]  # (инструмент, аргументы) — без submit_answer
+    refusal: bool
+    cited: tuple[tuple[str, str], ...]
+    latency_ms: int
+
+
+@dataclass(frozen=True, slots=True)
+class AgentCaseResult:
+    case: AgentCase
+    outcome: AgentOutcome | None  # None — провайдер не ответил
+
+    def called(self, tool: str) -> bool:
+        return self.outcome is not None and any(name == tool for name, _ in self.outcome.calls)
+
+
+@dataclass(frozen=True, slots=True)
+class AgentMetrics:
+    cases: int
+    answered_cases: int
+    tool_selection_accuracy: float | None
+    argument_accuracy: float | None
+    forbidden_call_rate: float | None
+    refusal_accuracy: float | None
+    citation_accuracy: float | None
+    latency_p95_ms: int | None
+
+
+def _args_match(outcome: AgentOutcome, tool: str, expected: Mapping[str, Any]) -> bool:
+    return any(
+        name == tool and all(args.get(key) == value for key, value in expected.items())
+        for name, args in outcome.calls
+    )
+
+
+def summarize_agent(results: Sequence[AgentCaseResult]) -> AgentMetrics:
+    done = [r for r in results if r.outcome is not None]
+    latencies = [r.outcome.latency_ms for r in done if r.outcome]
+    return AgentMetrics(
+        cases=len(results),
+        answered_cases=len(done),
+        tool_selection_accuracy=_share(
+            [all(r.called(t) for t in r.case.expected_tools) for r in done if r.case.expected_tools]
+        ),
+        argument_accuracy=_share(
+            [
+                _args_match(r.outcome, r.case.expected_tools[0], r.case.expected_args)
+                for r in done
+                if r.outcome and r.case.expected_args and r.case.expected_tools
+            ]
+        ),
+        forbidden_call_rate=_share(
+            [
+                any(r.called(t) for t in r.case.forbidden_tools)
+                for r in done
+                if r.case.forbidden_tools
+            ]
+        ),
+        refusal_accuracy=_share(
+            [
+                r.outcome.refusal == r.case.expect_refusal
+                for r in done
+                if r.outcome and r.case.expect_refusal is not None
+            ]
+        ),
+        citation_accuracy=_share(
+            [
+                any(
+                    title == r.case.document and r.case.section in path
+                    for title, path in r.outcome.cited
+                )
+                for r in done
+                if r.outcome and r.case.section
+            ]
+        ),
+        latency_p95_ms=percentile(latencies, 95) if latencies else None,
     )

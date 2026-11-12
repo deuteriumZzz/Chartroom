@@ -5,11 +5,17 @@ import pathlib
 import pytest
 
 from chartroom import cli
+from chartroom.agent.domain import ModelTurn, ToolCall
 from chartroom.bootstrap import Container, build_container
 from chartroom.identity.domain import Role
 from chartroom.qa.domain import GeneratedAnswer, Passage, RawCitation
 from chartroom.shared.config import Settings, get_settings
-from tests.fakes import RecordingQueue, ScriptedGenerator, StaticPassageRetriever
+from tests.fakes import (
+    RecordingQueue,
+    ScriptedAgentModel,
+    ScriptedGenerator,
+    StaticPassageRetriever,
+)
 
 PASSAGE = Passage(
     1, 7, "Fire", "Fire / 4.4 Engine room", None, "Close the fuel valves.", 0.03, 0.81
@@ -78,3 +84,38 @@ def test_eval_for_unknown_user_is_a_clear_error(tmp_path: pathlib.Path) -> None:
                 str(tmp_path / "R.md"),
             ]
         )
+
+
+@pytest.mark.usefixtures("engine")
+async def test_agent_eval_runs_as_the_given_user_and_writes_its_block(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    model = ScriptedAgentModel(
+        [ModelTurn((ToolCall("list_reports", {"status": "needs_review"}),), None)]
+    )
+
+    def fake_agent(settings: Settings) -> Container:
+        return build_container(settings, queue=RecordingQueue(), agent_model=model)
+
+    setup = build_container(get_settings(), queue=RecordingQueue())
+    await setup.identity.register("agent-cli@ship.test", "s3cret-pass", Role.OFFICER)
+    await setup.aclose()
+    monkeypatch.setattr(cli, "build_container", fake_agent)
+
+    golden = tmp_path / "agent.yaml"
+    golden.write_text(
+        '- {id: ag-03, question: "Мои отчёты?", expected_tools: [list_reports],'
+        " expected_args: {status: needs_review}}\n",
+        encoding="utf-8",
+    )
+    readme = tmp_path / "README.md"
+    readme.write_text("<!-- agent-eval:start -->\n<!-- agent-eval:end -->\n", encoding="utf-8")
+    args = ["eval", "--agent", "--as", "agent-cli@ship.test", "--golden", str(golden)]
+    args += ["--results-dir", str(tmp_path / "results"), "--readme", str(readme)]
+
+    await asyncio.to_thread(cli.main, args)
+
+    [report] = list((tmp_path / "results").glob("*-agent.json"))
+    metrics = json.loads(report.read_text(encoding="utf-8"))["metrics"]
+    assert (metrics["tool_selection_accuracy"], metrics["argument_accuracy"]) == (1.0, 1.0)
+    assert "| Выбор инструмента | 1.00 |" in readme.read_text(encoding="utf-8")

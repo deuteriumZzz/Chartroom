@@ -42,6 +42,12 @@ uv run python -m chartroom.cli chunk data/corpus/ru/fire-emergency.md  # как 
 | Сходство: мин. у вопросов с ответом / макс. у вопросов без | 0.66 / 0.63 |
 <!-- eval:end -->
 
+Агент с вызовом функций — `eval/agent_golden.yaml` (10 сценариев, включая prompt injection), `make eval-agent`:
+
+<!-- agent-eval:start -->
+Метрик агента пока нет: прогон `make eval-agent` ещё не выполнен.
+<!-- agent-eval:end -->
+
 ## Документация
 
 [Архитектура](docs/architecture.md) · [ADR](docs/adr/) · [Журнал ошибок ИИ](docs/ai-log.md) · [ТЗ](PROJECT_SPEC.md)

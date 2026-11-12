@@ -1,7 +1,14 @@
 from collections.abc import Sequence
 
-from chartroom.evaluation.domain import CaseResult, GoldenCase, Outcome
-from chartroom.evaluation.ports import AnswerProbe, RetrievalProbe
+from chartroom.evaluation.domain import (
+    AgentCase,
+    AgentCaseResult,
+    AgentOutcome,
+    CaseResult,
+    GoldenCase,
+    Outcome,
+)
+from chartroom.evaluation.ports import AgentProbe, AnswerProbe, RetrievalProbe
 from chartroom.shared.errors import ServiceUnavailableError
 
 DEFAULT_K = 5
@@ -28,4 +35,20 @@ class Evaluator:
                     # метрики ответов считаются по выполненным, число невыполненных — в отчёте.
                     outcome = None
             results.append(CaseResult(case, hits, outcome))
+        return results
+
+
+class AgentEvaluator:
+    def __init__(self, agent: AgentProbe) -> None:
+        self._agent = agent
+
+    async def run(self, cases: Sequence[AgentCase]) -> list[AgentCaseResult]:
+        results = []
+        for case in cases:
+            outcome: AgentOutcome | None
+            try:
+                outcome = await self._agent.run(case.question)
+            except ServiceUnavailableError:
+                outcome = None  # как и в eval ответов: невыполненный случай, а не выдуманная цифра
+            results.append(AgentCaseResult(case, outcome))
         return results

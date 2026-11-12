@@ -19,18 +19,32 @@ from collections.abc import Sequence
 from datetime import date
 from typing import Any
 
+from chartroom.agent.adapters.gemini import AGENT_PROMPT
+from chartroom.agent.domain import AgentViewer
 from chartroom.bootstrap import build_container, build_document_chunker
+from chartroom.evaluation.adapters.agent import ServiceAgentProbe
 from chartroom.evaluation.adapters.files import (
+    AGENT_BLOCK,
     RunInfo,
     current_commit,
+    load_agent_golden,
     load_golden,
+    render_agent_markdown,
     render_markdown,
     update_readme,
+    write_agent_report,
     write_report,
 )
 from chartroom.evaluation.adapters.qa import QaAnswerProbe, QaRetrievalProbe
-from chartroom.evaluation.domain import CaseResult, GoldenCase, summarize
-from chartroom.evaluation.service import DEFAULT_K, Evaluator
+from chartroom.evaluation.domain import (
+    AgentCase,
+    AgentCaseResult,
+    CaseResult,
+    GoldenCase,
+    summarize,
+    summarize_agent,
+)
+from chartroom.evaluation.service import DEFAULT_K, AgentEvaluator, Evaluator
 from chartroom.identity.domain import Role, User
 from chartroom.knowledge.domain.models import DocumentUpload
 from chartroom.qa.adapters.gemini import ANSWER_PROMPT
@@ -106,6 +120,35 @@ async def _evaluate(cases: list[GoldenCase], as_email: str, with_answers: bool) 
         await container.aclose()
 
 
+async def _evaluate_agent(cases: list[AgentCase], as_email: str) -> list[AgentCaseResult]:
+    container = build_container(get_settings())
+    try:
+        user = await container.identity.user_by_email(as_email)
+        viewer = AgentViewer(user.id, is_supervisor=user.role.is_at_least(Role.CAPTAIN))
+        return await AgentEvaluator(ServiceAgentProbe(container.agent, viewer)).run(cases)
+    finally:
+        await container.aclose()
+
+
+def _run_agent_eval(args: argparse.Namespace) -> None:
+    results = asyncio.run(_evaluate_agent(load_agent_golden(args.golden), args.as_email))
+    settings = get_settings()
+    run = RunInfo(
+        date=date.today(),
+        commit=current_commit(pathlib.Path.cwd()),
+        generation_models=tuple(settings.generation_models),
+        prompt_version=AGENT_PROMPT,
+        embedding_model=settings.embedding_model,
+        refusal_threshold=settings.refusal_min_similarity,
+        with_answers=True,
+    )
+    metrics = summarize_agent(results)
+    report = write_agent_report(args.results_dir, run, metrics, results)
+    markdown = render_agent_markdown(run, metrics)
+    update_readme(args.readme, markdown, AGENT_BLOCK)
+    print(f"{markdown}\n\nreport: {report}")
+
+
 def _run_eval(args: argparse.Namespace) -> None:
     with_answers = not args.retrieval_only
     results = asyncio.run(_evaluate(load_golden(args.golden), args.as_email, with_answers))
@@ -168,6 +211,9 @@ def _parser() -> argparse.ArgumentParser:
     evaluate.add_argument(
         "--retrieval-only", action="store_true", help="только поиск, без вызова модели генерации"
     )
+    evaluate.add_argument(
+        "--agent", action="store_true", help="eval агента по eval/agent_golden.yaml"
+    )
     return parser
 
 
@@ -182,6 +228,8 @@ def main(argv: Sequence[str] | None = None) -> None:
             asyncio.run(_seed_corpus(_load_corpus(args.manifest)))
         elif args.command == "seed-templates":
             asyncio.run(_seed_templates(_load_templates(args.dir)))
+        elif args.agent:
+            _run_agent_eval(args)
         else:
             _run_eval(args)
     except (DomainError, ServiceUnavailableError, OSError, ValueError) as e:
