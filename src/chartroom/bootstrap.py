@@ -6,6 +6,7 @@ from datetime import timedelta
 from google import genai
 from google.genai import types
 from qdrant_client import AsyncQdrantClient
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -49,6 +50,7 @@ from chartroom.reports.adapters.persistence import SqlReportsUnitOfWork
 from chartroom.reports.ports import ReportExtractor
 from chartroom.reports.service import ReportService
 from chartroom.shared.config import Settings
+from chartroom.shared.ratelimit import Policy, RateLimiter, RedisRateLimiter
 
 
 @dataclass(frozen=True)
@@ -59,10 +61,12 @@ class Container:
     passages: PassageRetriever  # поиск фрагментов отдельно от ответа — для eval
     reports: ReportService
     agent: AgentService
+    limiter: RateLimiter
     engine: AsyncEngine | None = None  # None, если фабрику сессий передали снаружи (тесты)
     qdrant: AsyncQdrantClient | None = None  # None, если поиск подменили (тесты)
 
     async def aclose(self) -> None:
+        await self.limiter.aclose()
         if self.qdrant is not None:
             await self.qdrant.close()
         if self.engine is not None:
@@ -77,6 +81,7 @@ def build_container(
     generator: AnswerGenerator | None = None,
     extractor: ReportExtractor | None = None,
     agent_model: AgentModel | None = None,
+    limiter: RateLimiter | None = None,
 ) -> Container:
     """Аргументы после settings подменяют тесты; в работе всё строится из настроек."""
     engine = None
@@ -138,8 +143,17 @@ def build_container(
         passages=retriever,
         reports=reports,
         agent=agent,
+        limiter=limiter or _rate_limiter(settings),
         engine=engine,
         qdrant=qdrant,
+    )
+
+
+def _rate_limiter(settings: Settings) -> RateLimiter:
+    # Redis.from_url не соединяется сразу: первое подключение — при первом запросе.
+    return RedisRateLimiter(
+        Redis.from_url(settings.redis_url),
+        {"login": Policy(settings.login_rate_limit), "ask": Policy(settings.ask_rate_limit)},
     )
 
 

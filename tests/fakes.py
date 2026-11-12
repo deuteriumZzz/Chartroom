@@ -2,7 +2,8 @@
 проверяют контрактные тесты в tests/integration/*/test_unit_of_work_contract.py."""
 
 import uuid
-from collections.abc import Sequence
+from collections import Counter
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field, fields, replace
 from datetime import UTC, datetime
 from typing import Any, Self
@@ -34,8 +35,9 @@ from chartroom.reports.domain import (
     ReportTemplate,
     TemplateNotFoundError,
 )
-from chartroom.shared.errors import ServiceUnavailableError
+from chartroom.shared.errors import ServiceUnavailableError, TooManyRequestsError
 from chartroom.shared.language import Language
+from chartroom.shared.ratelimit import Policy
 from chartroom.shared.schema import Issue, Schema
 from chartroom.shared.sparse import SparseVector
 
@@ -596,3 +598,17 @@ class FakeReports:
 class FakeDocuments:
     async def active_version(self, title: str) -> dict[str, Any]:
         return {"title": title, "active_version": "3", "issued_on": "2026-09-01"}
+
+
+class InMemoryRateLimiter:
+    def __init__(self, policies: Mapping[str, Policy]) -> None:
+        self._policies = policies
+        self.counts: Counter[tuple[str, str]] = Counter()
+
+    async def hit(self, policy: str, key: str) -> None:
+        self.counts[policy, key] += 1
+        if self.counts[policy, key] > self._policies[policy].requests:
+            raise TooManyRequestsError(retry_after=30)
+
+    async def aclose(self) -> None:
+        return None

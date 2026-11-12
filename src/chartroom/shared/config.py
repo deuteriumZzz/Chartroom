@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     generation_models: list[str] = Field(
         default=["gemini-3.6-flash", "gemini-3.5-flash"], min_length=1
     )
+    # Запросов в минуту: на вход — с одного IP, на вопросы (/ask, /agent/ask) — от пользователя.
+    login_rate_limit: int = Field(default=10, gt=0)
+    ask_rate_limit: int = Field(default=20, gt=0)
     # Порог сходства лучшего фрагмента с вопросом, ниже которого — отказ без вызова модели.
     # Откалиброван на золотом наборе (ADR-010): вопросы без ответа — до 0.632, с ответом — от 0.658.
     refusal_min_similarity: float = Field(default=0.64, ge=0.0, le=1.0)

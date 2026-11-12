@@ -6,7 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, Request, status
 from pydantic import BaseModel, ConfigDict, Field
 
-from chartroom.identity.api import OfficerUser
+from chartroom.identity.api import OfficerUser, limit_per_user
 from chartroom.identity.domain import Role, User
 from chartroom.qa.domain import (
     DEFAULT_TOP_K,
@@ -113,7 +113,7 @@ class QueryResponse(AnswerFields):
         )
 
 
-@router.post("/ask")
+@router.post("/ask", dependencies=[Depends(limit_per_user("ask"))])
 async def ask(request: AskRequest, user: OfficerUser, questions: QuestionsDep) -> AskResponse:
     """Ответ по актуальным процедурам с проверенными цитатами — или отказ, если ответа нет.
 

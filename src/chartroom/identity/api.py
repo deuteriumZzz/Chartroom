@@ -39,6 +39,23 @@ def require_role(minimum: Role) -> Callable[[User], Awaitable[User]]:
     return dependency
 
 
+def limit_per_client(policy: str) -> Callable[[Request], Awaitable[None]]:
+    """Лимит по IP клиента — для эндпойнтов до входа. За прокси нужен его адрес в request.client."""
+
+    async def dependency(request: Request) -> None:
+        host = request.client.host if request.client else "unknown"
+        await request.app.state.container.limiter.hit(policy, host)
+
+    return dependency
+
+
+def limit_per_user(policy: str) -> Callable[[Request, User], Awaitable[None]]:
+    async def dependency(request: Request, user: CurrentUser) -> None:
+        await request.app.state.container.limiter.hit(policy, f"user:{user.id}")
+
+    return dependency
+
+
 AdminUser = Annotated[User, Depends(require_role(Role.ADMIN))]
 OfficerUser = Annotated[User, Depends(require_role(Role.OFFICER))]
 
@@ -48,7 +65,7 @@ class TokenResponse(BaseModel):
     token_type: Literal["bearer"] = "bearer"
 
 
-@router.post("/login")
+@router.post("/login", dependencies=[Depends(limit_per_client("login"))])
 async def login(
     form: Annotated[OAuth2PasswordRequestForm, Depends()], service: IdentityServiceDep
 ) -> TokenResponse:

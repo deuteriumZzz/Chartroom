@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from chartroom.agent.domain import MAX_QUESTION_LENGTH, AgentViewer
 from chartroom.agent.service import AgentService
-from chartroom.identity.api import OfficerUser
+from chartroom.identity.api import OfficerUser, limit_per_user
 from chartroom.identity.domain import Role
 from chartroom.shared.language import Language
 
@@ -57,7 +57,7 @@ class AgentResponse(BaseModel):
     tool_calls: list[ToolCallResponse]  # видно, какие данные агент запросил и что получил
 
 
-@router.post("/ask")
+@router.post("/ask", dependencies=[Depends(limit_per_user("ask"))])
 async def ask_agent(request: AgentRequest, user: OfficerUser, agent: AgentDep) -> AgentResponse:
     """Вопрос агенту: модель сама запрашивает процедуры, отчёты и шаблоны через функции.
 

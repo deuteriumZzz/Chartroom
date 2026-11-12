@@ -32,6 +32,14 @@ class NotFoundError(DomainError):
     pass
 
 
+class TooManyRequestsError(Exception):
+    """Клиент превысил лимит запросов. Не бизнес-ошибка: повторить можно через `retry_after`."""
+
+    def __init__(self, retry_after: int) -> None:
+        super().__init__("Too many requests")
+        self.retry_after = retry_after
+
+
 class ServiceUnavailableError(Exception):
     """Внешний сервис (провайдер эмбеддингов, векторное хранилище, очередь) недоступен.
 

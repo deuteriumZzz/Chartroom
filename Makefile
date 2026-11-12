@@ -1,4 +1,4 @@
-.PHONY: up lint test user seed eval eval-agent
+.PHONY: up lint test audit user seed eval eval-agent
 
 up:
 	docker compose up --build
@@ -10,10 +10,14 @@ lint:
 	uv run mypy
 	uv run lint-imports
 
-# Интеграционным тестам нужны Postgres (отдельная БД chartroom_test) и Qdrant.
+# Интеграционным тестам нужны Postgres (отдельная БД chartroom_test), Qdrant и Redis.
 test:
-	docker compose up -d --wait db qdrant
+	docker compose up -d --wait db qdrant redis
 	uv run pytest --cov
+
+# Известные уязвимости в зафиксированных зависимостях (то же проверяет CI).
+audit:
+	uv export --frozen --no-dev --no-emit-project | uvx pip-audit --requirement /dev/stdin --no-deps --disable-pip
 
 # make user EMAIL=admin@ship.test ROLE=admin  (пароль спросит интерактивно)
 user:

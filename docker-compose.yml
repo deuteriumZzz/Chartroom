@@ -22,6 +22,7 @@ services:
       retries: 10
   redis:
     image: redis:8.2-alpine
+    ports: ["6379:6379"]  # для интеграционных тестов лимитера (make test)
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 3s

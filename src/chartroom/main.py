@@ -1,9 +1,13 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
+from prometheus_client import CollectorRegistry
+from prometheus_fastapi_instrumentator import Instrumentator
+from starlette.middleware.base import RequestResponseEndpoint
 
+from chartroom import ui
 from chartroom.agent import api as agent_api
 from chartroom.bootstrap import Container, build_container
 from chartroom.identity import api as identity_api
@@ -19,6 +23,7 @@ from chartroom.shared.errors import (
     NotFoundError,
     PermissionDeniedError,
     ServiceUnavailableError,
+    TooManyRequestsError,
 )
 
 # Новый модуль добавляет ошибки-наследники — этот маппинг менять не нужно.
@@ -44,6 +49,29 @@ async def _service_unavailable_handler(_: Request, exc: Exception) -> JSONRespon
     return JSONResponse({"detail": str(exc)}, status_code=503, headers={"Retry-After": "30"})
 
 
+async def _too_many_requests_handler(_: Request, exc: Exception) -> JSONResponse:
+    assert isinstance(exc, TooManyRequestsError)
+    return JSONResponse(
+        {"detail": str(exc)}, status_code=429, headers={"Retry-After": str(exc.retry_after)}
+    )
+
+
+# Страница и её файлы: ни одного внешнего ресурса, ни одного inline-скрипта или стиля.
+_UI_CSP = (
+    "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; "
+    "base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+)
+
+
+async def _security_headers(request: Request, call_next: RequestResponseEndpoint) -> Response:
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    if request.url.path == "/" or request.url.path.startswith("/ui/"):
+        response.headers["Content-Security-Policy"] = _UI_CSP
+    return response
+
+
 def create_app(container: Container | None = None) -> FastAPI:
     deps = container or build_container(get_settings())
 
@@ -56,11 +84,20 @@ def create_app(container: Container | None = None) -> FastAPI:
     app.state.container = deps
     app.add_exception_handler(DomainError, _domain_error_handler)
     app.add_exception_handler(ServiceUnavailableError, _service_unavailable_handler)
+    app.add_exception_handler(TooManyRequestsError, _too_many_requests_handler)
+    app.middleware("http")(_security_headers)
     app.include_router(identity_api.router)
     app.include_router(knowledge_api.router)
     app.include_router(qa_api.router)
     app.include_router(reports_api.router)
     app.include_router(agent_api.router)
+    app.include_router(ui.router)
+    app.mount("/ui", ui.files)
+    # Метрики Prometheus (запросы, задержки, статусы); закрывать /metrics нужно на уровне сети.
+    # Свой реестр у каждого приложения: нет глобального состояния, тесты не мешают друг другу.
+    Instrumentator(registry=CollectorRegistry()).instrument(app).expose(
+        app, include_in_schema=False
+    )
 
     @app.get("/health", tags=["system"])
     async def health() -> dict[str, str]:

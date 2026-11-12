@@ -71,3 +71,13 @@ async def test_protected_route_requires_valid_token(
     client: AsyncClient, headers: dict[str, str]
 ) -> None:
     assert (await client.get("/probe/officer", headers=headers)).status_code == 401
+
+
+async def test_passwords_and_tokens_never_reach_the_logs(
+    client: AsyncClient, caplog: pytest.LogCaptureFixture
+) -> None:
+    caplog.set_level("DEBUG")
+    await client.post(
+        "/auth/login", data={"username": "ghost@ship.test", "password": "Sup3r-secret-pw"}
+    )
+    assert "Sup3r-secret-pw" not in caplog.text
