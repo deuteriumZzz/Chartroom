@@ -41,7 +41,14 @@ def app() -> FastAPI:
         RefusalPolicy(min_similarity=0.5),
         lambda: InMemoryQaUnitOfWork(QaStore()),
     )
-    return create_app(Container(identity=identity, library=library, questions=questions))
+    return create_app(
+        Container(
+            identity=identity,
+            library=library,
+            questions=questions,
+            passages=StaticPassageRetriever([]),
+        )
+    )
 
 
 @pytest.fixture

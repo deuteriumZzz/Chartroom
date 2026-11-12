@@ -22,6 +22,14 @@ make test   # unit и интеграционные тесты на Postgres, п�
 uv run python -m chartroom.cli chunk data/corpus/ru/fire-emergency.md  # как документ режется на фрагменты
 ```
 
+## Качество (eval)
+
+Золотой набор `eval/golden.yaml`: 30 вопросов (20 с ответом, 5 на другом языке, 5 без ответа). Числа ниже пишет `make eval`, руками они не правятся.
+
+<!-- eval:start -->
+Метрик пока нет: первый прогон `make eval` ещё не выполнен.
+<!-- eval:end -->
+
 ## Документация
 
 [Архитектура](docs/architecture.md) · [ADR](docs/adr/) · [Журнал ошибок ИИ](docs/ai-log.md) · [ТЗ](PROJECT_SPEC.md)

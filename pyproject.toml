@@ -19,6 +19,7 @@ dependencies = [
     "httpx>=0.27",
     "qdrant-client>=1.20.0",
     "celery[redis]>=5.7.0",
+    "pyyaml>=6.0.3",
 ]
 
 [dependency-groups]
@@ -31,6 +32,7 @@ dev = [
     "import-linter>=2.16",
     "pytest-cov>=7.1.0",
     "celery-types>=0.26.0",
+    "types-pyyaml>=6.0.12.20261111",
 ]
 
 [build-system]
@@ -61,7 +63,7 @@ include_external_packages = true
 [[tool.importlinter.contracts]]
 name = "Слои модуля: api и adapters -> service -> ports -> domain"
 type = "layers"
-containers = ["chartroom.identity", "chartroom.knowledge", "chartroom.qa"]
+containers = ["chartroom.identity", "chartroom.knowledge", "chartroom.qa", "chartroom.evaluation"]
 # (api) — необязательный слой: у модуля может ещё не быть HTTP-интерфейса.
 layers = ["(api) | adapters", "service", "ports", "domain"]
 
@@ -72,17 +74,18 @@ source_modules = [
     "chartroom.identity.domain", "chartroom.identity.ports", "chartroom.identity.service",
     "chartroom.knowledge.domain", "chartroom.knowledge.ports", "chartroom.knowledge.service",
     "chartroom.qa.domain", "chartroom.qa.ports", "chartroom.qa.service",
+    "chartroom.evaluation.domain", "chartroom.evaluation.ports", "chartroom.evaluation.service",
 ]
 forbidden_modules = [
     "fastapi", "pydantic", "sqlalchemy", "jwt", "pwdlib", "pymupdf", "docx",
-    "qdrant_client", "google", "celery", "kombu", "httpx",
+    "qdrant_client", "google", "celery", "kombu", "httpx", "yaml",
     "chartroom.shared.database", "chartroom.shared.config",
 ]
 
 [[tool.importlinter.contracts]]
 name = "Модули не импортируют друг друга напрямую"
 type = "independence"
-modules = ["chartroom.identity", "chartroom.knowledge", "chartroom.qa"]
+modules = ["chartroom.identity", "chartroom.knowledge", "chartroom.qa", "chartroom.evaluation"]
 # Разрешённые связи — только через края модулей, ядра остаются независимыми:
 # HTTP-слои проверяют права через identity, а qa ищет фрагменты через адаптер к knowledge.
 ignore_imports = [
@@ -90,6 +93,8 @@ ignore_imports = [
     "chartroom.qa.api -> chartroom.identity.api",
     "chartroom.qa.api -> chartroom.identity.domain",
     "chartroom.qa.adapters.knowledge -> chartroom.knowledge.service",
+    "chartroom.evaluation.adapters.qa -> chartroom.qa.ports",
+    "chartroom.evaluation.adapters.qa -> chartroom.qa.service",
 ]
 
 [tool.coverage.run]

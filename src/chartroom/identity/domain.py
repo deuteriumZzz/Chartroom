@@ -8,6 +8,7 @@ from chartroom.shared.errors import (
     AuthenticationError,
     ConflictError,
     InvalidInputError,
+    NotFoundError,
     PermissionDeniedError,
 )
 
@@ -40,6 +41,10 @@ class InvalidTokenError(AuthenticationError):
 
 class InsufficientRoleError(PermissionDeniedError):
     message = "Insufficient role"
+
+
+class UserNotFoundError(NotFoundError):
+    message = "User not found"
 
 
 class EmailAlreadyRegisteredError(ConflictError):

@@ -1,0 +1,41 @@
+# Золотой набор для eval (FR-14): 20 вопросов с ответом, 5 на другом языке, 5 без ответа.
+# document — точное название документа, section — часть пути раздела, где лежит ответ.
+# Согласованность с корпусом проверяет tests/unit/evaluation/test_golden_set.py.
+
+# --- С ответом, язык вопроса = язык документа (RU) ---
+- {id: ru-01, kind: answerable, question: "Кто принимает решение о пуске стационарной системы CO2?", document: "Действия при пожаре на судне", section: "4.4 Пожар в машинном отделении"}
+- {id: ru-02, kind: answerable, question: "Какой сигнал пожарной тревоги подаёт вахтенный помощник?", document: "Действия при пожаре на судне", section: "4.2 Объявление тревоги"}
+- {id: ru-03, kind: answerable, question: "Какое давление должно быть в баллонах дыхательных аппаратов перед входом в задымлённое помещение?", document: "Действия при пожаре на судне", section: "4.3 Тушение"}
+- {id: ru-04, kind: answerable, question: "В какой срок капитан отправляет в компанию отчёт о пожаре?", document: "Действия при пожаре на судне", section: "5. Записи"}
+- {id: ru-05, kind: answerable, question: "Какой манёвр выполнять, если о падении человека за борт узнали с задержкой?", document: "Человек за бортом", section: "4.2 Выбор манёвра"}
+- {id: ru-06, kind: answerable, question: "Когда при падении человека за борт сообщают в спасательно-координационный центр?", document: "Человек за бортом", section: "4.4 Оповещение"}
+- {id: ru-07, kind: answerable, question: "Каким сигналом объявляется общесудовая тревога?", document: "Оставление судна", section: "4.1 Общесудовая тревога"}
+- {id: ru-08, kind: answerable, question: "Кто доставляет аварийный радиобуй и транспондер в спасательную шлюпку?", document: "Оставление судна", section: "3. Ответственность"}
+- {id: ru-09, kind: answerable, question: "Что нужно проверить за 72 часа до прихода в порт перед проверкой PSC?", document: "Подготовка к проверке государства порта (PSC)", section: "3.1 За 72 часа до прихода"}
+- {id: ru-10, kind: answerable, question: "Как часто вахтенный помощник проверяет натяжение швартовных концов у причала?", document: "Швартовные операции", section: "5. Стоянка у причала"}
+
+# --- С ответом, язык вопроса = язык документа (EN) ---
+- {id: en-01, kind: answerable, question: "What gas readings are required before entering an enclosed space?", document: "Enclosed Space Entry", section: "4.2 Ventilation and atmosphere testing"}
+- {id: en-02, kind: answerable, question: "How long is a permit to enter an enclosed space valid?", document: "Enclosed Space Entry", section: "4.1 Permit to enter"}
+- {id: en-03, kind: answerable, question: "May the standby attendant enter the space to rescue a collapsed person?", document: "Enclosed Space Entry", section: "4.4 Rescue"}
+- {id: en-04, kind: answerable, question: "What is the maximum filling level of a fuel tank during bunkering?", document: "Bunkering Operations", section: "3.2 Pollution prevention"}
+- {id: en-05, kind: answerable, question: "How long must the bunker fuel sample be kept on board?", document: "Bunkering Operations", section: "5. Completion and records"}
+- {id: en-06, kind: answerable, question: "What is the first thing to do if oil is spilled during a transfer?", document: "Oil Spill Response on Board", section: "3.1 Stop the source"}
+- {id: en-07, kind: answerable, question: "Within what time must the full oil spill report be sent?", document: "Oil Spill Response on Board", section: "4. Reporting"}
+- {id: en-08, kind: answerable, question: "How often is each vessel internally audited under the safety management system?", document: "Internal ISM Audit", section: "2. Scope and frequency"}
+- {id: en-09, kind: answerable, question: "What happens after a major non-conformity is found in an internal audit?", document: "Internal ISM Audit", section: "5. Follow-up"}
+- {id: en-10, kind: answerable, question: "Within how many hours must a near miss report be handed to the Master?", document: "Reporting Non-conformities, Accidents and Near Misses", section: "3.2 How and when"}
+
+# --- С ответом, вопрос на другом языке, чем документ ---
+- {id: x-01, kind: cross_language, question: "What signal announces the general emergency alarm?", document: "Оставление судна", section: "4.1 Общесудовая тревога"}
+- {id: x-02, kind: cross_language, question: "Who decides to release the fixed CO2 system during an engine room fire?", document: "Действия при пожаре на судне", section: "4.4 Пожар в машинном отделении"}
+- {id: x-03, kind: cross_language, question: "How often must each lifeboat be launched with its crew?", document: "Оставление судна", section: "5. Учения и записи"}
+- {id: x-04, kind: cross_language, question: "Какая концентрация кислорода допустима для входа в замкнутое помещение?", document: "Enclosed Space Entry", section: "4.2 Ventilation and atmosphere testing"}
+- {id: x-05, kind: cross_language, question: "Сколько хранится на борту проба топлива после бункеровки?", document: "Bunkering Operations", section: "5. Completion and records"}
+
+# --- Без ответа в корпусе: правильный результат — отказ ---
+- {id: no-01, kind: unanswerable, question: "Как часто нужно менять масло в главном двигателе?"}
+- {id: no-02, kind: unanswerable, question: "What is the maximum wind speed allowed for mooring operations?"}
+- {id: no-03, kind: unanswerable, question: "Как приготовить борщ на камбузе?"}
+- {id: no-04, kind: unanswerable, question: "Which European port has the strictest port state control regime?"}
+- {id: no-05, kind: unanswerable, question: "Сколько стоит замена спасательного плота?"}

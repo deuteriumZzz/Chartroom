@@ -45,6 +45,7 @@ class Container:
     identity: IdentityService
     library: DocumentLibrary
     questions: QuestionService
+    passages: PassageRetriever  # поиск фрагментов отдельно от ответа — для eval
     engine: AsyncEngine | None = None  # None, если фабрику сессий передали снаружи (тесты)
     qdrant: AsyncQdrantClient | None = None  # None, если поиск подменили (тесты)
 
@@ -104,7 +105,12 @@ def build_container(
         uow_factory=lambda: SqlQaUnitOfWork(sessions),
     )
     return Container(
-        identity=identity, library=library, questions=questions, engine=engine, qdrant=qdrant
+        identity=identity,
+        library=library,
+        questions=questions,
+        passages=retriever,
+        engine=engine,
+        qdrant=qdrant,
     )
 
 

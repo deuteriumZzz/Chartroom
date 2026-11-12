@@ -78,3 +78,12 @@ async def test_login_rejects_bad_credentials(
 async def test_authenticate_rejects_token_of_missing_user(service: IdentityService) -> None:
     with pytest.raises(InvalidTokenError):
         await service.authenticate(TOKENS.issue(user_id=999))
+
+
+async def test_user_is_found_by_email_ignoring_case(service: IdentityService) -> None:
+    from chartroom.identity.domain import UserNotFoundError
+
+    user = await service.register("eval@ship.test", "s3cret-pass", Role.ADMIN)
+    assert await service.user_by_email(" EVAL@ship.test ") == user
+    with pytest.raises(UserNotFoundError):
+        await service.user_by_email("nobody@ship.test")

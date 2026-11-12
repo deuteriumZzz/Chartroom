@@ -5,6 +5,7 @@ from chartroom.identity.domain import (
     InvalidTokenError,
     Role,
     User,
+    UserNotFoundError,
     ensure_strong_password,
     ensure_valid_email,
     normalize_email,
@@ -42,6 +43,13 @@ class IdentityService:
             user = await uow.users.get(user_id)
         if user is None:  # пользователь удалён после выдачи токена
             raise InvalidTokenError
+        return user
+
+    async def user_by_email(self, email: str) -> User:
+        async with self._uow_factory() as uow:
+            user = await uow.users.get_by_email(normalize_email(email))
+        if user is None:
+            raise UserNotFoundError
         return user
 
     async def register(self, email: str, password: str, role: Role) -> User:
