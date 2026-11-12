@@ -1,7 +1,7 @@
 # ТЗ: Chartroom
 
 Демонстрационный backend-проект «ассистент по судовым процедурам и отчётам».
-Автор ТЗ: роль «архитектор + старший разработчик». Статус: согласовано, в работе (дни 1–9 выполнены).
+Автор ТЗ: роль «архитектор + старший разработчик». Статус: согласовано, в работе (дни 1–11 выполнены).
 
 ---
 
@@ -126,9 +126,8 @@ client (HTTP: HTMX UI / Swagger · CLI)
 `citations(id, query_id, position, document_id, version_id, title, section_path, page, quote)` — без внешних ключей на документы, чтобы журнал переживал удаление ·
 `tool_calls(id, query_id, step, name, args_json, ok, latency_ms)` ·
 `feedback(query_id, useful, comment, created_at)` — один отзыв на ответ ·
-`report_templates(id, name, schema_json, version)` ·
-`reports(id, template_id, user_id, source_text, data_json, status)` ·
-`report_issues(id, report_id, field, message)` ·
+`report_templates(id, name, title, schema, version, created_at)` ·
+`reports(id, template_id, user_id, source_text, data, status, issues, created_at, updated_at)` — замечания одним JSONB-полем (ADR-011) ·
 `eval_runs(id, git_sha, metrics_json, created_at)`.
 
 ### API (v1)
@@ -214,8 +213,8 @@ chartroom/
 | 7 ✅ | Проверка цитат (FR-6, промпт v2), журнал запросов, `GET /queries` по ролям, отзывы (FR-7), ADR-008 |
 | 8 ✅ | Золотой набор (30 вопросов), модуль `evaluation`, `make eval`, первые метрики поиска, ADR-009 |
 | 9 ✅ | Решения по eval: порог отказа 0,64, реранкер и смена нарезки не нужны (hit@5 = 1,00), ADR-010 |
-| 10 | M2: шаблоны и извлечение отчётов, валидация |
-| 11 | M2: сохранение, статусы, чек-листы |
+| 10 ✅ | M2: шаблоны (JSON Schema, версии), извлечение через Gemini, валидация с замечаниями |
+| 11 ✅ | M2: сохранение, статусы и правила принятия, 3 стартовых шаблона, ADR-011 |
 | 12 | M4: цикл function calling, инструменты, права, аудит `tool_calls` |
 | 13 | M4: eval агента, тесты IDOR и prompt injection |
 | 14 | UI (HTMX): чат, загрузка, форма отчёта |
