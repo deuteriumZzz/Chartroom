@@ -12,45 +12,19 @@ from chartroom.agent.domain import (
     ToolCall,
 )
 from chartroom.agent.service import AgentService
-from chartroom.reports.domain import ReportNotFoundError, TemplateNotFoundError
 from chartroom.shared.language import Language
-from tests.fakes import InMemoryAgentUnitOfWork, ScriptedAgentModel, StaticProcedureSearch
+from tests.fakes import (
+    FakeDocuments,
+    FakeReports,
+    InMemoryAgentUnitOfWork,
+    ScriptedAgentModel,
+    StaticProcedureSearch,
+)
 
 OFFICER = AgentViewer(7, is_supervisor=False)
 FIRE = Source(
     0, 1, 7, "Fire", "Fire / 4.4 Engine room", None, "Close the fuel valves before releasing CO2."
 )
-
-
-class FakeReports:
-    """Отчёт 5 принадлежит пользователю 7; чужие и несуществующие — ReportNotFoundError."""
-
-    def __init__(self) -> None:
-        self.viewers: list[AgentViewer] = []
-
-    async def list_reports(
-        self, viewer: AgentViewer, status: str | None, template: str | None, limit: int
-    ) -> list[dict[str, Any]]:
-        self.viewers.append(viewer)
-        return [
-            {"report_id": 5, "status": status or "needs_review", "template": template, "issues": 1}
-        ]
-
-    async def get_report(self, viewer: AgentViewer, report_id: int) -> dict[str, Any]:
-        self.viewers.append(viewer)
-        if report_id != 5 or viewer.user_id != 7:
-            raise ReportNotFoundError
-        return {"report_id": 5, "issues": [{"field": "crew_present", "message": "required"}]}
-
-    async def get_template(self, name: str) -> dict[str, Any]:
-        if name != "drill_checklist":
-            raise TemplateNotFoundError
-        return {"name": name, "required": ["crew_present"]}
-
-
-class FakeDocuments:
-    async def active_version(self, title: str) -> dict[str, Any]:
-        return {"title": title, "active_version": "3", "issued_on": "2026-09-01"}
 
 
 def _agent(

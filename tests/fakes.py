@@ -5,9 +5,9 @@ import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass, field, fields, replace
 from datetime import UTC, datetime
-from typing import Self
+from typing import Any, Self
 
-from chartroom.agent.domain import AgentRun, ModelTurn, Source, ToolResult
+from chartroom.agent.domain import AgentRun, AgentViewer, ModelTurn, Source, ToolResult
 from chartroom.identity.domain import EmailAlreadyRegisteredError, Role, User
 from chartroom.knowledge.domain.indexing import IndexedChunk, RetrievedChunk
 from chartroom.knowledge.domain.models import (
@@ -29,8 +29,10 @@ from chartroom.qa.domain import (
 from chartroom.reports.domain import (
     Report,
     ReportData,
+    ReportNotFoundError,
     ReportStatus,
     ReportTemplate,
+    TemplateNotFoundError,
 )
 from chartroom.shared.errors import ServiceUnavailableError
 from chartroom.shared.language import Language
@@ -563,3 +565,34 @@ class StaticProcedureSearch:
             raise ServiceUnavailableError("Vector store is unavailable")
         self.queries.append((query, top_k))
         return self._sources[:top_k]
+
+
+class FakeReports:
+    """Отчёт 5 принадлежит пользователю 7; чужие и несуществующие — ReportNotFoundError."""
+
+    def __init__(self) -> None:
+        self.viewers: list[AgentViewer] = []
+
+    async def list_reports(
+        self, viewer: AgentViewer, status: str | None, template: str | None, limit: int
+    ) -> list[dict[str, Any]]:
+        self.viewers.append(viewer)
+        return [
+            {"report_id": 5, "status": status or "needs_review", "template": template, "issues": 1}
+        ]
+
+    async def get_report(self, viewer: AgentViewer, report_id: int) -> dict[str, Any]:
+        self.viewers.append(viewer)
+        if report_id != 5 or viewer.user_id != 7:
+            raise ReportNotFoundError
+        return {"report_id": 5, "issues": [{"field": "crew_present", "message": "required"}]}
+
+    async def get_template(self, name: str) -> dict[str, Any]:
+        if name != "drill_checklist":
+            raise TemplateNotFoundError
+        return {"name": name, "required": ["crew_present"]}
+
+
+class FakeDocuments:
+    async def active_version(self, title: str) -> dict[str, Any]:
+        return {"title": title, "active_version": "3", "issued_on": "2026-09-01"}
