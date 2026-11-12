@@ -7,6 +7,7 @@ from dataclasses import dataclass, field, fields, replace
 from datetime import UTC, datetime
 from typing import Self
 
+from chartroom.agent.domain import AgentRun, ModelTurn, Source, ToolResult
 from chartroom.identity.domain import EmailAlreadyRegisteredError, Role, User
 from chartroom.knowledge.domain.indexing import IndexedChunk, RetrievedChunk
 from chartroom.knowledge.domain.models import (
@@ -494,3 +495,71 @@ class ScriptedExtractor:
     async def extract(self, text: str, template: ReportTemplate) -> ReportData:
         self.calls.append((text, template.name))
         return dict(self.data)
+
+
+class ScriptedConversation:
+    """Диалог по сценарию: заданные ходы модели и журнал результатов, которые она получила."""
+
+    def __init__(self, turns: list[ModelTurn]) -> None:
+        self._turns = list(turns)
+        self.received: list[list[ToolResult]] = []
+        self.model: str | None = None
+
+    async def next_turn(self, results: Sequence[ToolResult]) -> ModelTurn:
+        self.received.append(list(results))
+        self.model = "scripted-agent"
+        return self._turns.pop(0) if self._turns else ModelTurn((), None)
+
+
+class ScriptedAgentModel:
+    prompt_version = "agent.test"
+
+    def __init__(self, turns: list[ModelTurn]) -> None:
+        self.conversation = ScriptedConversation(turns)
+        self.started: list[str] = []
+
+    def start(self, question: str, language: Language) -> ScriptedConversation:
+        self.started.append(question)
+        return self.conversation
+
+
+class InMemoryAgentRunLog:
+    def __init__(self, runs: list[AgentRun]) -> None:
+        self._runs = runs
+
+    async def add(self, run: AgentRun) -> int:
+        self._runs.append(run)
+        return len(self._runs)
+
+
+class InMemoryAgentUnitOfWork:
+    """Записи видны снаружи только после commit()."""
+
+    runs: InMemoryAgentRunLog
+
+    def __init__(self, store: list[AgentRun]) -> None:
+        self._store = store
+
+    async def __aenter__(self) -> Self:
+        self._pending = list(self._store)
+        self.runs = InMemoryAgentRunLog(self._pending)
+        return self
+
+    async def __aexit__(self, *exc_info: object) -> None:
+        return None
+
+    async def commit(self) -> None:
+        self._store[:] = self._pending
+
+
+class StaticProcedureSearch:
+    def __init__(self, sources: list[Source], unavailable: bool = False) -> None:
+        self._sources = sources
+        self._unavailable = unavailable
+        self.queries: list[tuple[str, int]] = []
+
+    async def search(self, query: str, top_k: int) -> list[Source]:
+        if self._unavailable:
+            raise ServiceUnavailableError("Vector store is unavailable")
+        self.queries.append((query, top_k))
+        return self._sources[:top_k]
