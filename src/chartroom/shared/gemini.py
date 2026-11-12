@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 async def generate_with_fallback(
     client: genai.Client,
     models: Sequence[str],
-    contents: str,
+    contents: str | list[types.Content],
     config: types.GenerateContentConfig,
 ) -> tuple[types.GenerateContentResponse, str]:
     """Ответ первой модели цепочки, которая смогла ответить, и имя этой модели."""

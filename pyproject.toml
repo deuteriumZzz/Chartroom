@@ -65,7 +65,7 @@ name = "Слои модуля: api и adapters -> service -> ports -> domain"
 type = "layers"
 containers = [
     "chartroom.identity", "chartroom.knowledge", "chartroom.qa", "chartroom.evaluation",
-    "chartroom.reports",
+    "chartroom.reports", "chartroom.agent",
 ]
 # (api) — необязательный слой: у модуля может ещё не быть HTTP-интерфейса.
 layers = ["(api) | adapters", "service", "ports", "domain"]
@@ -79,6 +79,7 @@ source_modules = [
     "chartroom.qa.domain", "chartroom.qa.ports", "chartroom.qa.service",
     "chartroom.evaluation.domain", "chartroom.evaluation.ports", "chartroom.evaluation.service",
     "chartroom.reports.domain", "chartroom.reports.ports", "chartroom.reports.service",
+    "chartroom.agent.domain", "chartroom.agent.ports", "chartroom.agent.service",
 ]
 forbidden_modules = [
     "fastapi", "pydantic", "sqlalchemy", "jwt", "pwdlib", "pymupdf", "docx",
@@ -91,7 +92,7 @@ name = "Модули не импортируют друг друга напря�
 type = "independence"
 modules = [
     "chartroom.identity", "chartroom.knowledge", "chartroom.qa", "chartroom.evaluation",
-    "chartroom.reports",
+    "chartroom.reports", "chartroom.agent",
 ]
 # Разрешённые связи — только через края модулей, ядра остаются независимыми:
 # HTTP-слои проверяют права через identity, а qa ищет фрагменты через адаптер к knowledge.
@@ -104,6 +105,12 @@ ignore_imports = [
     "chartroom.evaluation.adapters.qa -> chartroom.qa.service",
     "chartroom.reports.api -> chartroom.identity.api",
     "chartroom.reports.api -> chartroom.identity.domain",
+    "chartroom.agent.api -> chartroom.identity.api",
+    "chartroom.agent.api -> chartroom.identity.domain",
+    "chartroom.agent.adapters.search -> chartroom.qa.ports",
+    "chartroom.agent.adapters.reports -> chartroom.reports.domain",
+    "chartroom.agent.adapters.reports -> chartroom.reports.service",
+    "chartroom.agent.adapters.documents -> chartroom.knowledge.service",
 ]
 
 [tool.coverage.run]

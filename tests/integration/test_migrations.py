@@ -5,6 +5,7 @@ from alembic.migration import MigrationContext
 from sqlalchemy import Connection
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+import chartroom.agent.adapters.persistence
 import chartroom.identity.adapters.persistence
 import chartroom.knowledge.adapters.persistence
 import chartroom.qa.adapters.persistence

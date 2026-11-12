@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
+from chartroom.agent import api as agent_api
 from chartroom.bootstrap import Container, build_container
 from chartroom.identity import api as identity_api
 from chartroom.knowledge import api as knowledge_api
@@ -59,6 +60,7 @@ def create_app(container: Container | None = None) -> FastAPI:
     app.include_router(knowledge_api.router)
     app.include_router(qa_api.router)
     app.include_router(reports_api.router)
+    app.include_router(agent_api.router)
 
     @app.get("/health", tags=["system"])
     async def health() -> dict[str, str]:

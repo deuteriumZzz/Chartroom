@@ -5,6 +5,9 @@ import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
+from chartroom.agent.adapters.documents import LibraryDocumentsReader
+from chartroom.agent.adapters.reports import ReportServiceReader
+from chartroom.agent.service import AgentService
 from chartroom.bootstrap import Container
 from chartroom.identity.adapters.tokens import JwtTokenService
 from chartroom.identity.service import IdentityService
@@ -16,6 +19,7 @@ from chartroom.reports.service import ReportService
 from chartroom.shared.errors import DomainError
 from tests.fakes import (
     FakePasswordHasher,
+    InMemoryAgentUnitOfWork,
     InMemoryIdentityUnitOfWork,
     InMemoryKnowledgeUnitOfWork,
     InMemoryQaUnitOfWork,
@@ -24,9 +28,11 @@ from tests.fakes import (
     QaStore,
     RecordingQueue,
     ReportsStore,
+    ScriptedAgentModel,
     ScriptedExtractor,
     ScriptedGenerator,
     StaticPassageRetriever,
+    StaticProcedureSearch,
 )
 
 
@@ -45,14 +51,22 @@ def app() -> FastAPI:
         RefusalPolicy(min_similarity=0.5),
         lambda: InMemoryQaUnitOfWork(QaStore()),
     )
+    reports = ReportService(
+        lambda: InMemoryReportsUnitOfWork(ReportsStore()), ScriptedExtractor({})
+    )
     return create_app(
         Container(
             identity=identity,
             library=library,
             questions=questions,
             passages=StaticPassageRetriever([]),
-            reports=ReportService(
-                lambda: InMemoryReportsUnitOfWork(ReportsStore()), ScriptedExtractor({})
+            reports=reports,
+            agent=AgentService(
+                ScriptedAgentModel([]),
+                StaticProcedureSearch([]),
+                ReportServiceReader(reports),
+                LibraryDocumentsReader(library),
+                lambda: InMemoryAgentUnitOfWork([]),
             ),
         )
     )

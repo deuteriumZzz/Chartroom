@@ -14,6 +14,13 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.pool import NullPool
 
+from chartroom.agent.adapters.documents import LibraryDocumentsReader
+from chartroom.agent.adapters.gemini import GeminiAgentModel, UnconfiguredAgentModel
+from chartroom.agent.adapters.persistence import SqlAgentUnitOfWork
+from chartroom.agent.adapters.reports import ReportServiceReader
+from chartroom.agent.adapters.search import QaProcedureSearch
+from chartroom.agent.ports import AgentModel
+from chartroom.agent.service import AgentService
 from chartroom.identity.adapters.passwords import Argon2PasswordHasher
 from chartroom.identity.adapters.persistence import SqlIdentityUnitOfWork
 from chartroom.identity.adapters.tokens import JwtTokenService
@@ -51,6 +58,7 @@ class Container:
     questions: QuestionService
     passages: PassageRetriever  # поиск фрагментов отдельно от ответа — для eval
     reports: ReportService
+    agent: AgentService
     engine: AsyncEngine | None = None  # None, если фабрику сессий передали снаружи (тесты)
     qdrant: AsyncQdrantClient | None = None  # None, если поиск подменили (тесты)
 
@@ -68,6 +76,7 @@ def build_container(
     retriever: PassageRetriever | None = None,
     generator: AnswerGenerator | None = None,
     extractor: ReportExtractor | None = None,
+    agent_model: AgentModel | None = None,
 ) -> Container:
     """Аргументы после settings подменяют тесты; в работе всё строится из настроек."""
     engine = None
@@ -92,10 +101,12 @@ def build_container(
     embedder: QueryEmbedder = UnconfiguredQueryEmbedder()
     default_generator: AnswerGenerator = UnconfiguredAnswerGenerator()
     default_extractor: ReportExtractor = UnconfiguredReportExtractor()
+    default_agent_model: AgentModel = UnconfiguredAgentModel()
     if gemini is not None:
         embedder = GeminiEmbedder(gemini, settings.embedding_model, settings.embedding_dimensions)
         default_generator = GeminiAnswerGenerator(gemini, settings.generation_models)
         default_extractor = GeminiReportExtractor(gemini, settings.generation_models)
+        default_agent_model = GeminiAgentModel(gemini, settings.generation_models)
 
     qdrant = None
     if retriever is None:
@@ -112,14 +123,21 @@ def build_container(
         policy=RefusalPolicy(settings.refusal_min_similarity),
         uow_factory=lambda: SqlQaUnitOfWork(sessions),
     )
+    reports = ReportService(lambda: SqlReportsUnitOfWork(sessions), extractor or default_extractor)
+    agent = AgentService(
+        model=agent_model or default_agent_model,
+        search=QaProcedureSearch(retriever),
+        reports=ReportServiceReader(reports),
+        documents=LibraryDocumentsReader(library),
+        uow_factory=lambda: SqlAgentUnitOfWork(sessions),
+    )
     return Container(
         identity=identity,
         library=library,
         questions=questions,
         passages=retriever,
-        reports=ReportService(
-            lambda: SqlReportsUnitOfWork(sessions), extractor or default_extractor
-        ),
+        reports=reports,
+        agent=agent,
         engine=engine,
         qdrant=qdrant,
     )
