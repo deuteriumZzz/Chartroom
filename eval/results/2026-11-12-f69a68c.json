@@ -1,0 +1,332 @@
+{
+  "run": {
+    "date": "2026-11-12",
+    "commit": "f69a68c",
+    "generation_models": [
+      "gemini-3.6-flash",
+      "gemini-3.5-flash"
+    ],
+    "prompt_version": "answer.v2",
+    "embedding_model": "gemini-embedding-001",
+    "refusal_threshold": 0.55,
+    "with_answers": false
+  },
+  "metrics": {
+    "cases": 30,
+    "answered_cases": 0,
+    "k": 5,
+    "hit_at_k": 1.0,
+    "mrr": 0.94,
+    "refusal_accuracy": null,
+    "false_refusal_rate": null,
+    "citation_accuracy": null,
+    "citation_warning_rate": null,
+    "latency_p50_ms": null,
+    "latency_p95_ms": null,
+    "min_answerable_similarity": 0.6576434161723284,
+    "max_unanswerable_similarity": 0.632003425839235,
+    "suggested_refusal_threshold": 0.6448234210057817
+  },
+  "cases": [
+    {
+      "id": "ru-01",
+      "kind": "answerable",
+      "rank": 1,
+      "best_similarity": 0.7694575325742617,
+      "refusal": null,
+      "cited": null,
+      "citation_warning": null,
+      "latency_ms": null
+    },
+    {
+      "id": "ru-02",
+      "kind": "answerable",
+      "rank": 1,
+      "best_similarity": 0.78202767146128,
+      "refusal": null,
+      "cited": null,
+      "citation_warning": null,
+      "latency_ms": null
+    },
+    {
+      "id": "ru-03",
+      "kind": "answerable",
+      "rank": 1,
+      "best_similarity": 0.7448354615804648,
+      "refusal": null,
+      "cited": null,
+      "citation_warning": null,
+      "latency_ms": null
+    },
+    {
+      "id": "ru-04",
+      "kind": "answerable",
+      "rank": 1,
+      "best_similarity": 0.7986030592043442,
+      "refusal": null,
+      "cited": null,
+      "citation_warning": null,
+      "latency_ms": null
+    },
+    {
+      "id": "ru-05",
+      "kind": "answerable",
+      "rank": 1,
+      "best_similarity": 0.7799811407456044,
+      "refusal": null,
+      "cited": null,
+      "citation_warning": null,
+      "latency_ms": null
+    },
+    {
+      "id": "ru-06",
+      "kind": "answerable",
+      "rank": 1,
+      "best_similarity": 0.809055648367289,
+      "refusal": null,
+      "cited": null,
+      "citation_warning": null,
+      "latency_ms": null
+    },
+    {
+      "id": "ru-07",
+      "kind": "answerable",
+      "rank": 1,
+      "best_similarity": 0.7856508070260639,
+      "refusal": null,
+      "cited": null,
+      "citation_warning": null,
+      "latency_ms": null
+    },
+    {
+      "id": "ru-08",
+      "kind": "answerable",
+      "rank": 1,
+      "best_similarity": 0.7414321475685873,
+      "refusal": null,
+      "cited": null,
+      "citation_warning": null,
+      "latency_ms": null
+    },
+    {
+      "id": "ru-09",
+      "kind": "answerable",
+      "rank": 1,
+      "best_similarity": 0.8281923141673266,
+      "refusal": null,
+      "cited": null,
+      "citation_warning": null,
+      "latency_ms": null
+    },
+    {
+      "id": "ru-10",
+      "kind": "answerable",
+      "rank": 1,
+      "best_similarity": 0.8402993282178062,
+      "refusal": null,
+      "cited": null,
+      "citation_warning": null,
+      "latency_ms": null
+    },
+    {
+      "id": "en-01",
+      "kind": "answerable",
+      "rank": 1,
+      "best_similarity": 0.7750540568589105,
+      "refusal": null,
+      "cited": null,
+      "citation_warning": null,
+      "latency_ms": null
+    },
+    {
+      "id": "en-02",
+      "kind": "answerable",
+      "rank": 1,
+      "best_similarity": 0.8112672925838219,
+      "refusal": null,
+      "cited": null,
+      "citation_warning": null,
+      "latency_ms": null
+    },
+    {
+      "id": "en-03",
+      "kind": "answerable",
+      "rank": 1,
+      "best_similarity": 0.7289083299793483,
+      "refusal": null,
+      "cited": null,
+      "citation_warning": null,
+      "latency_ms": null
+    },
+    {
+      "id": "en-04",
+      "kind": "answerable",
+      "rank": 1,
+      "best_similarity": 0.7422420015069926,
+      "refusal": null,
+      "cited": null,
+      "citation_warning": null,
+      "latency_ms": null
+    },
+    {
+      "id": "en-05",
+      "kind": "answerable",
+      "rank": 1,
+      "best_similarity": 0.7614706487393005,
+      "refusal": null,
+      "cited": null,
+      "citation_warning": null,
+      "latency_ms": null
+    },
+    {
+      "id": "en-06",
+      "kind": "answerable",
+      "rank": 1,
+      "best_similarity": 0.7209576093581782,
+      "refusal": null,
+      "cited": null,
+      "citation_warning": null,
+      "latency_ms": null
+    },
+    {
+      "id": "en-07",
+      "kind": "answerable",
+      "rank": 1,
+      "best_similarity": 0.7591241704642906,
+      "refusal": null,
+      "cited": null,
+      "citation_warning": null,
+      "latency_ms": null
+    },
+    {
+      "id": "en-08",
+      "kind": "answerable",
+      "rank": 1,
+      "best_similarity": 0.7527750452496775,
+      "refusal": null,
+      "cited": null,
+      "citation_warning": null,
+      "latency_ms": null
+    },
+    {
+      "id": "en-09",
+      "kind": "answerable",
+      "rank": 1,
+      "best_similarity": 0.7249774224894588,
+      "refusal": null,
+      "cited": null,
+      "citation_warning": null,
+      "latency_ms": null
+    },
+    {
+      "id": "en-10",
+      "kind": "answerable",
+      "rank": 1,
+      "best_similarity": 0.7661726507219363,
+      "refusal": null,
+      "cited": null,
+      "citation_warning": null,
+      "latency_ms": null
+    },
+    {
+      "id": "x-01",
+      "kind": "cross_language",
+      "rank": 2,
+      "best_similarity": 0.6576434161723284,
+      "refusal": null,
+      "cited": null,
+      "citation_warning": null,
+      "latency_ms": null
+    },
+    {
+      "id": "x-02",
+      "kind": "cross_language",
+      "rank": 1,
+      "best_similarity": 0.7326864099379445,
+      "refusal": null,
+      "cited": null,
+      "citation_warning": null,
+      "latency_ms": null
+    },
+    {
+      "id": "x-03",
+      "kind": "cross_language",
+      "rank": 1,
+      "best_similarity": 0.6912616398862429,
+      "refusal": null,
+      "cited": null,
+      "citation_warning": null,
+      "latency_ms": null
+    },
+    {
+      "id": "x-04",
+      "kind": "cross_language",
+      "rank": 2,
+      "best_similarity": 0.7521393152139053,
+      "refusal": null,
+      "cited": null,
+      "citation_warning": null,
+      "latency_ms": null
+    },
+    {
+      "id": "x-05",
+      "kind": "cross_language",
+      "rank": 2,
+      "best_similarity": 0.7455941573264404,
+      "refusal": null,
+      "cited": null,
+      "citation_warning": null,
+      "latency_ms": null
+    },
+    {
+      "id": "no-01",
+      "kind": "unanswerable",
+      "rank": null,
+      "best_similarity": 0.6037520656060931,
+      "refusal": null,
+      "cited": null,
+      "citation_warning": null,
+      "latency_ms": null
+    },
+    {
+      "id": "no-02",
+      "kind": "unanswerable",
+      "rank": null,
+      "best_similarity": 0.6189406163360682,
+      "refusal": null,
+      "cited": null,
+      "citation_warning": null,
+      "latency_ms": null
+    },
+    {
+      "id": "no-03",
+      "kind": "unanswerable",
+      "rank": null,
+      "best_similarity": 0.6307608343210171,
+      "refusal": null,
+      "cited": null,
+      "citation_warning": null,
+      "latency_ms": null
+    },
+    {
+      "id": "no-04",
+      "kind": "unanswerable",
+      "rank": null,
+      "best_similarity": 0.6087703389553868,
+      "refusal": null,
+      "cited": null,
+      "citation_warning": null,
+      "latency_ms": null
+    },
+    {
+      "id": "no-05",
+      "kind": "unanswerable",
+      "rank": null,
+      "best_similarity": 0.632003425839235,
+      "refusal": null,
+      "cited": null,
+      "citation_warning": null,
+      "latency_ms": null
+    }
+  ]
+}
