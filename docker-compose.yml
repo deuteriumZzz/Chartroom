@@ -28,6 +28,7 @@ services:
       retries: 10
   api:
     build: .
+    image: chartroom:local  # один образ на api и worker: собирается один раз
     # .env.example — демо-значения для запуска одной командой; .env (если есть) их перекрывает
     env_file:
       - path: .env.example
@@ -44,8 +45,10 @@ services:
       db: {condition: service_healthy}
       redis: {condition: service_healthy}
   worker:
-    build: .
-    command: ["celery", "-A", "chartroom.worker", "worker", "--loglevel=INFO", "--concurrency=2"]
+    image: chartroom:local
+    pull_policy: never  # образ собирает сервис api
+    # Один процесс: каждый процесс Celery загружает приложение целиком, а нагрузка демо мала.
+    command: ["celery", "-A", "chartroom.worker", "worker", "--loglevel=INFO", "--concurrency=1"]
     env_file:
       - path: .env.example
       - path: .env
