@@ -2,24 +2,21 @@ from collections.abc import Callable
 from dataclasses import replace
 
 from chartroom.reports.domain import (
-    InvalidTemplateError,
     Report,
     ReportData,
     ReportLockedError,
     ReportNotFoundError,
     ReportStatus,
     ReportTemplate,
-    Schema,
     TemplateNotFoundError,
     Viewer,
     check_report_text,
-    check_schema,
     check_template_name,
     ensure_can_accept,
     status_for,
-    validate,
 )
 from chartroom.reports.ports import ReportExtractor, ReportsUnitOfWork
+from chartroom.shared.schema import InvalidTemplateError, Schema, check_schema, validate
 
 UowFactory = Callable[[], ReportsUnitOfWork]
 

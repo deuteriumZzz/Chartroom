@@ -28,14 +28,13 @@ from chartroom.qa.domain import (
     QueryEntry,
 )
 from chartroom.reports.domain import (
-    Issue,
     Report,
     ReportData,
     ReportStatus,
     ReportTemplate,
-    Schema,
 )
 from chartroom.shared.errors import ServiceUnavailableError
+from chartroom.shared.schema import Issue, Schema
 from chartroom.shared.sparse import SparseVector
 
 

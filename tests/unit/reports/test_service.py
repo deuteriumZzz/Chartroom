@@ -3,9 +3,7 @@ import pytest
 from chartroom.reports.domain import (
     AcceptanceDeniedError,
     InvalidReportTextError,
-    InvalidTemplateError,
     InvalidTemplateNameError,
-    Issue,
     ReportHasIssuesError,
     ReportLockedError,
     ReportNotFoundError,
@@ -14,6 +12,7 @@ from chartroom.reports.domain import (
     Viewer,
 )
 from chartroom.reports.service import ReportService
+from chartroom.shared.schema import InvalidTemplateError, Issue
 from tests.fakes import InMemoryReportsUnitOfWork, ReportsStore, ScriptedExtractor
 
 SCHEMA = {

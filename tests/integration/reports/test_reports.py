@@ -18,9 +18,12 @@ from chartroom.reports.adapters.persistence import (
     SqlReportsUnitOfWork,
     TemplateVersionConflictError,
 )
-from chartroom.reports.domain import Issue, ReportStatus
+from chartroom.reports.domain import (
+    ReportStatus,
+)
 from chartroom.reports.ports import ReportsUnitOfWork
 from chartroom.shared.config import Settings, get_settings
+from chartroom.shared.schema import Issue
 from tests.fakes import InMemoryReportsUnitOfWork, RecordingQueue, ReportsStore, ScriptedExtractor
 
 SCHEMA = {

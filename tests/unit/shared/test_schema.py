@@ -1,6 +1,6 @@
 import pytest
 
-from chartroom.reports.domain import InvalidTemplateError, Issue, check_schema, validate
+from chartroom.shared.schema import InvalidTemplateError, Issue, check_schema, validate
 
 DRILL = {
     "type": "object",

@@ -8,15 +8,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
 
 from chartroom.reports.domain import (
-    Issue,
     Report,
     ReportData,
     ReportStatus,
     ReportTemplate,
-    Schema,
 )
 from chartroom.shared.database import Base, SqlAlchemyUnitOfWork
 from chartroom.shared.errors import ConflictError
+from chartroom.shared.schema import Issue, Schema
 
 
 class TemplateVersionConflictError(ConflictError):

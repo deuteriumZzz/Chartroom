@@ -2,7 +2,13 @@
 
 from typing import Protocol, Self
 
-from chartroom.reports.domain import Issue, Report, ReportData, ReportStatus, ReportTemplate, Schema
+from chartroom.reports.domain import (
+    Report,
+    ReportData,
+    ReportStatus,
+    ReportTemplate,
+)
+from chartroom.shared.schema import Issue, Schema
 
 
 class TemplateRepository(Protocol):

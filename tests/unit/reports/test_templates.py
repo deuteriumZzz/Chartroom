@@ -5,7 +5,7 @@ import pathlib
 
 import pytest
 
-from chartroom.reports.domain import Issue, check_schema, validate
+from chartroom.shared.schema import Issue, check_schema, validate
 
 TEMPLATES = sorted(
     (pathlib.Path(__file__).resolve().parents[3] / "data" / "templates").glob("*.json")
