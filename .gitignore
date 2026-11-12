@@ -5,3 +5,8 @@ __pycache__/
 .ruff_cache/
 .pytest_cache/
 .coverage
+
+.serena/
+.import_linter_cache/
+PROJECT_SPEC.md
+eval/results/

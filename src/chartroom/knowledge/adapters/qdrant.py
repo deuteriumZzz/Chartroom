@@ -13,7 +13,7 @@ from chartroom.shared.sparse import SparseVector
 DENSE_VECTOR = "dense"
 SPARSE_VECTOR = "bm25"
 _UNAVAILABLE = "Vector store is unavailable"
-# Кандидатов от каждого вида поиска до слияния (ТЗ: top-20).
+# Кандидатов от каждого вида поиска до слияния.
 PREFETCH_LIMIT = 20
 
 

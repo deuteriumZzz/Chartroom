@@ -110,7 +110,7 @@ async def _seed_corpus(corpus: list[tuple[str, DocumentUpload]]) -> None:
 async def _evaluate(cases: list[GoldenCase], as_email: str, with_answers: bool) -> list[CaseResult]:
     container = build_container(get_settings())
     try:
-        # Вопросы eval задаёт существующий пользователь: журнал честно показывает, кто их задавал.
+        # Вопросы eval задаёт существующий пользователь: журнал показывает, кто их задавал.
         user = await container.identity.user_by_email(as_email)
         evaluator = Evaluator(
             QaRetrievalProbe(container.passages), QaAnswerProbe(container.questions, user.id)

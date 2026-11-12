@@ -1,4 +1,4 @@
-"""HTTP-адаптер агента: POST /agent/ask (FR-16)."""
+"""HTTP-адаптер агента: POST /agent/ask."""
 
 from typing import Annotated, Any
 

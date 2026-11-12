@@ -16,7 +16,7 @@ def _now() -> datetime:
 
 
 class ToolCallRecord(Base):
-    """Аудит каждого вызова инструмента (FR-21)."""
+    """Аудит каждого вызова инструмента."""
 
     __tablename__ = "tool_calls"
 

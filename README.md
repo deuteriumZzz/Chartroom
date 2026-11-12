@@ -1,64 +1,75 @@
+<div align="center">
+
 # Chartroom
 
-Ассистент по судовым процедурам (SMS/ISM) и отчётам. Отвечает только по загруженным документам, со ссылкой на раздел и страницу. Если источника нет — честно отказывает, а не угадывает.
+**RAG-ассистент по судовым процедурам (SMS/ISM) с проверяемыми цитатами, разбором отчётов и агентом с вызовом функций.**
 
-> **Демо-проект.** Корпус процедур синтетический, реальных данных судоходных компаний нет.
-> **Статус:** функциональность готова (дни 1–15 из 16): ответы с проверенными цитатами, отчёты из свободного текста, агент с вызовом функций, интерфейс, защита API. Метрики качества записывает только `make eval` — выдуманных чисел здесь нет.
+![Python](https://img.shields.io/badge/python-3.12-blue)
+![Coverage](https://img.shields.io/badge/coverage-%E2%89%A595%25-brightgreen)
 
-## Запуск
+</div>
+
+Ответы строятся только по загруженным документам и сопровождаются ссылкой на раздел и страницу. Если подходящего источника нет, система отказывает, а не угадывает. Корпус в репозитории синтетический.
+
+## Возможности
+
+- **Вопросы по процедурам** — гибридный поиск (dense + BM25, слияние RRF) в Qdrant, ответ Gemini, каждая цитата сверяется с найденным фрагментом.
+- **Версии документов** — отвечает по актуальной версии, индексация идёт в фоне (Celery).
+- **Отчёты и чек-листы** — разбор свободного текста в структуру по шаблону (JSON Schema), проверка полей и статусы `draft` → `needs_review` → `accepted`.
+- **Агент** — Gemini function calling: поиск по процедурам, список и чтение отчётов, шаблоны. Только чтение, права берутся из токена пользователя.
+- **Безопасность** — JWT и роли, rate limit, строгий CSP, защита загрузки файлов, `pip-audit` и `gitleaks` в CI.
+- **Eval** — золотые наборы для поиска, ответов и агента: `make eval`, `make eval-agent`.
+
+## Архитектура
+
+```mermaid
+flowchart LR
+  UI["Web UI / Swagger"] --> API["FastAPI"]
+  API --> M["identity · knowledge · qa · reports · agent"]
+  M --> PG[("PostgreSQL")]
+  M --> QD[("Qdrant")]
+  M --> LLM["Gemini"]
+  API -->|"очередь"| R[("Redis")] --> W["Celery worker: разбор и индексация"]
+  W --> QD
+```
+
+Модульный монолит: внутри модуля `domain → ports → service → api/adapters`, границы проверяет import-linter. Подробнее — [docs/architecture.md](docs/architecture.md) и [ADR](docs/adr/).
+
+## Быстрый старт
+
+Нужны Docker и [uv](https://docs.astral.sh/uv/).
 
 ```bash
-cp .env.example .env                        # впишите GEMINI_API_KEY — без него worker не стартует
-make up                                     # интерфейс: http://localhost:8088/ · Swagger: /docs
-make user EMAIL=admin@ship.test ROLE=admin  # первый пользователь (пароль спросит)
-make seed                                   # загрузить демо-корпус в индексацию
+cp .env.example .env                        # впишите GEMINI_API_KEY
+make up                                     # интерфейс: http://localhost:8088 · Swagger: /docs
+make user EMAIL=admin@ship.test ROLE=admin  # первый пользователь
+make seed                                   # демо-корпус и шаблоны отчётов
 ```
 
 ## Разработка
 
 ```bash
-make lint   # ruff, mypy --strict, границы слоёв (import-linter)
-make test   # unit и интеграционные тесты (Postgres, Qdrant, Redis), покрытие ≥ 95%
-make audit  # известные уязвимости в зависимостях
-uv run python -m chartroom.cli chunk data/corpus/ru/fire-emergency.md  # как документ режется на фрагменты
+make lint    # ruff, mypy --strict, import-linter
+make test    # unit и интеграционные тесты, покрытие ≥ 95%
+make audit   # уязвимости в зависимостях
+make eval    # золотой набор вопросов (нужен GEMINI_API_KEY)
+make eval-agent
 ```
 
 ## Качество (eval)
 
-Золотой набор `eval/golden.yaml`: 30 вопросов (20 с ответом, 5 на другом языке, 5 без ответа). Числа ниже пишет `make eval`, руками они не правятся.
+`make eval` проверяет поиск и ответы на `eval/golden.yaml` (30 вопросов), `make eval-agent` — выбор инструментов и устойчивость к prompt injection на `eval/agent_golden.yaml` (10 сценариев). Итоговые таблицы записываются сюда автоматически.
 
 <!-- eval:start -->
-Прогон 2026-11-12, коммит `f69a68c`: 30 вопросов, только поиск, без генерации ответов.
-Модели генерации: gemini-3.6-flash, gemini-3.5-flash; промпт `answer.v2`; эмбеддинги `gemini-embedding-001`; порог отказа 0.55.
-
-| Метрика | Значение |
-|---|---|
-| hit@5 | 1.00 |
-| MRR | 0.94 |
-| Точность отказов (вопросы без ответа) | — |
-| Ложные отказы (вопросы с ответом) | — |
-| Корректность цитат | — |
-| Доля ответов с `citation_warning` | — |
-| Задержка p50 / p95 | — |
-| Сходство: мин. у вопросов с ответом / макс. у вопросов без | 0.66 / 0.63 |
 <!-- eval:end -->
 
-Агент с вызовом функций — `eval/agent_golden.yaml` (10 сценариев, включая prompt injection), `make eval-agent`:
-
 <!-- agent-eval:start -->
-Прогон 2026-11-12, коммит `88619cb`: 10 сценариев, выполнено 4; модели gemini-3.6-flash, gemini-3.5-flash, промпт `agent.v1`.
-**Неполный прогон:** 6 сценариев без ответа провайдера.
-
-| Метрика агента | Значение |
-|---|---|
-| Выбор инструмента | 1.00 |
-| Аргументы вызова | 1.00 |
-| Вызовы запрещённых инструментов | — |
-| Точность отказов (в т.ч. prompt injection) | — |
-| Корректность цитат | 1.00 |
-| Задержка p95 | 31.1 с |
 <!-- agent-eval:end -->
+
+## Стек
+
+Python 3.12 · FastAPI · Pydantic v2 · SQLAlchemy 2 (async) · Alembic · PostgreSQL 16 · Qdrant · Celery · Redis · Gemini API · Docker Compose · uv · ruff · mypy · pytest
 
 ## Документация
 
-[Архитектура](docs/architecture.md) · [ADR](docs/adr/) · [Журнал ошибок ИИ](docs/ai-log.md) · [ТЗ](PROJECT_SPEC.md)
+[Архитектура](docs/architecture.md) · [ADR](docs/adr/) · [Журнал решений по работе с ИИ](docs/ai-log.md)

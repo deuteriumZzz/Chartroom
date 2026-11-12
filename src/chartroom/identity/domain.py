@@ -26,7 +26,7 @@ class Role(StrEnum):
         return _RANK[self] >= _RANK[required]
 
 
-# «officer+» в ТЗ: старшая роль включает права младших.
+# «officer+»: старшая роль включает права младших.
 _RANK = {Role.OFFICER: 1, Role.CAPTAIN: 2, Role.ADMIN: 3}
 
 

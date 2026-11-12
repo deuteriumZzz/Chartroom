@@ -127,7 +127,7 @@ async def ask(request: AskRequest, user: OfficerUser, questions: QuestionsDep) -
 async def give_feedback(
     query_id: int, request: FeedbackRequest, user: OfficerUser, questions: QuestionsDep
 ) -> None:
-    """Отзыв на свой ответ (FR-7). Повторный отзыв заменяет прежний."""
+    """Отзыв на свой ответ. Повторный отзыв заменяет прежний."""
     await questions.give_feedback(query_id, _viewer(user), request.useful, request.comment)
 
 

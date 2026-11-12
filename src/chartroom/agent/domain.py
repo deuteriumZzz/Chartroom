@@ -1,7 +1,7 @@
-"""Агент с вызовом функций (M4, FR-16…FR-22): инструменты, шаги, итоговый ответ.
+"""Агент с вызовом функций: инструменты, шаги, итоговый ответ.
 
 Описание инструмента — JSON Schema аргументов. Ту же схему получает модель (function
-declarations) и по ней же проверяются аргументы её вызовов (FR-18): одно описание вместо двух.
+declarations) и по ней же проверяются аргументы её вызовов: одно описание вместо двух.
 """
 
 from collections.abc import Sequence
@@ -13,8 +13,8 @@ from chartroom.shared.language import Language
 from chartroom.shared.quotes import quote_in, words
 from chartroom.shared.schema import Schema
 
-MAX_STEPS = 4  # FR-20: больше шагов — честный отказ, а не бесконечный цикл
-# FR-20: лимит на весь запрос. Шаг ограничен таймаутом модели (shared.gemini.PER_MODEL_HTTP), но
+MAX_STEPS = 4  # больше шагов — отказ, а не бесконечный цикл
+# лимит на весь запрос. Шаг ограничен таймаутом модели (shared.gemini.PER_MODEL_HTTP), но
 # 4 шага по цепочке моделей без общего лимита растянулись бы на минуты.
 MAX_REQUEST_SECONDS = 60
 MAX_QUESTION_LENGTH = 1000
@@ -186,7 +186,7 @@ class AgentAnswer:
 
 @dataclass(frozen=True, slots=True)
 class AgentViewer:
-    """От чьего имени выполняются инструменты. Модель этого не задаёт (FR-19)."""
+    """От чьего имени выполняются инструменты. Модель этого не задаёт."""
 
     user_id: int
     is_supervisor: bool
@@ -220,7 +220,7 @@ def normalize_question(raw: str) -> str:
 def finalize(
     args: dict[str, Any], sources: Sequence[Source], language: Language, steps: int
 ) -> AgentAnswer:
-    """Итог из submit_answer: цитаты проверяются по фрагментам этого запроса (FR-22)."""
+    """Итог из submit_answer: цитаты проверяются по фрагментам этого запроса."""
     text, refusal = args.get("answer"), args.get("refusal")
     if not isinstance(text, str) or not isinstance(refusal, bool):
         raise InvalidSubmissionError

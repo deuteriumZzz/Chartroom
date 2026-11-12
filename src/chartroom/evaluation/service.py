@@ -49,6 +49,6 @@ class AgentEvaluator:
             try:
                 outcome = await self._agent.run(case.question)
             except ServiceUnavailableError:
-                outcome = None  # как и в eval ответов: невыполненный случай, а не выдуманная цифра
+                outcome = None  # как и в eval ответов: невыполненный случай
             results.append(AgentCaseResult(case, outcome))
         return results

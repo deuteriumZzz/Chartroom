@@ -36,7 +36,7 @@ eval:
 	QDRANT_URL=http://localhost:6333 \
 	uv run python -m chartroom.cli eval --as $(or $(EVAL_USER),admin@ship.test) $(ARGS)
 
-# Eval агента (FR-23) по eval/agent_golden.yaml. По умолчанию от имени офицера: сценарии с prompt
+# Eval агента по eval/agent_golden.yaml. По умолчанию от имени офицера: сценарии с prompt
 # injection и чужими отчётами проверяют настоящие права, а не права admin.
 eval-agent:
 	DATABASE_URL=postgresql+asyncpg://chartroom:chartroom@localhost:5432/chartroom \

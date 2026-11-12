@@ -165,7 +165,7 @@ async def test_real_container_refuses_on_empty_library_and_closes(
         settings = get_settings().model_copy(update={"gemini_api_key": SecretStr(key)})
         container = build_container(settings, session_factory, RecordingQueue())
         user = await container.identity.register(f"k{len(key)}@ship.test", PASSWORD, Role.OFFICER)
-        # В чистой БД нет активных версий: честный отказ, Gemini и Qdrant не вызываются.
+        # В чистой БД нет активных версий: отказ, Gemini и Qdrant не вызываются.
         reply = await container.questions.ask("Что делать при пожаре?", user.id)
         assert (reply.answer.refusal, reply.answer.text) == (
             True,

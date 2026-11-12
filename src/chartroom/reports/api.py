@@ -1,4 +1,4 @@
-"""HTTP-адаптер модуля reports: шаблоны, извлечение, проверка и статусы (FR-9…FR-12)."""
+"""HTTP-адаптер модуля reports: шаблоны, извлечение, проверка и статусы."""
 
 from datetime import datetime
 from typing import Annotated, Any

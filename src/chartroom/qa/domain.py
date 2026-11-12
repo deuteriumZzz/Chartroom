@@ -83,7 +83,7 @@ class Answer:
     language: Language
     refusal: bool
     citations: tuple[Citation, ...]
-    citation_warning: bool = False  # модель сослалась на то, чего нет в контексте (FR-6)
+    citation_warning: bool = False  # модель сослалась на то, чего нет в контексте
 
     @classmethod
     def refused(cls, language: Language, citation_warning: bool = False) -> "Answer":
@@ -176,7 +176,7 @@ def render_context(question: str, language: Language, passages: Sequence[Passage
 def verify_citations(
     raw: Sequence[RawCitation], passages: Sequence[Passage]
 ) -> tuple[tuple[Citation, ...], bool]:
-    """FR-6: ссылка остаётся, только если указывает на переданный фрагмент и её цитата
+    """ссылка остаётся, только если указывает на переданный фрагмент и её цитата
     дословно (по словам) в нём есть. Иначе ссылка удаляется, а ответ получает предупреждение.
 
     Сравнение по последовательности слов: пунктуация, регистр и markdown не мешают,

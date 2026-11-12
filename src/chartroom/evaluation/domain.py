@@ -1,4 +1,4 @@
-"""Золотой набор и метрики качества (FR-14, FR-15). Чистые функции — без I/O."""
+"""Золотой набор и метрики качества. Чистые функции — без I/O."""
 
 import math
 from collections.abc import Mapping, Sequence
@@ -140,7 +140,7 @@ def summarize(results: Sequence[CaseResult], k: int) -> Metrics:
     )
 
 
-# --- Eval агента (FR-23) ---------------------------------------------------------------------
+# --- Eval агента ---------------------------------------------------------------------
 
 
 @dataclass(frozen=True, slots=True)

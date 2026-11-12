@@ -91,7 +91,7 @@ class AgentService:
             results = tuple(
                 [await self._run(step, call, viewer, sources, records) for call in turn.calls]
             )
-        if answer is None:  # FR-20: шаги или время кончились — честно говорим, что данных нет
+        if answer is None:  # шаги или время кончились — сообщаем, что данных нет
             answer = AgentAnswer(NO_DATA_TEXT[language], language, True, (), False, step)
 
         run = AgentRun(
@@ -116,7 +116,7 @@ class AgentService:
         sources: list[Source],
         records: list[ToolCallRecord],
     ) -> ToolResult:
-        """Выполняет один вызов. Любая проблема возвращается модели как результат-ошибка (FR-18)."""
+        """Выполняет один вызов. Любая проблема возвращается модели как результат-ошибка."""
         started = time.perf_counter()
         spec = DATA_TOOL_SPECS.get(call.name)
         error: str | None = None

@@ -5,7 +5,7 @@
 ## Решение
 - **Вход**: OAuth2 password flow (`POST /auth/login`), с ним работает Authorize в Swagger. Открытой регистрации нет, первый admin создаётся через CLI (`make user`).
 - **Токен**: HS256 JWT с минимумом полей: `sub` (id пользователя), `iat`, `exp`. Роль в токен не кладётся и читается из БД на каждый запрос.
-- **Роли**: `officer < captain < admin`, старшая роль включает права младших («officer+» в ТЗ). Проверка — доменный метод `User.ensure_role`, в HTTP он подключается зависимостью `require_role`.
+- **Роли**: `officer < captain < admin`, старшая роль включает права младших. Проверка — доменный метод `User.ensure_role`, в HTTP он подключается зависимостью `require_role`.
 - **Пароли**: argon2id (pwdlib), хеширование в `asyncio.to_thread`.
 
 ## Почему так

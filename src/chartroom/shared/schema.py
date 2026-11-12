@@ -97,7 +97,7 @@ def _problem(spec: Schema, value: Any) -> str | None:
 
 
 def validate(schema: Schema, data: dict[str, Any]) -> tuple[Issue, ...]:
-    """FR-11: обязательные поля, типы, форматы, enum, диапазоны и согласованность полей."""
+    """обязательные поля, типы, форматы, enum, диапазоны и согласованность полей."""
     properties: Schema = schema["properties"]
     required = set(schema.get("required", []))
     issues: list[Issue] = []

@@ -152,7 +152,7 @@ async def test_documents_bridge_reports_the_active_revision() -> None:
 
 
 async def test_response_without_candidates_is_an_empty_turn() -> None:
-    """Например, ответ заблокирован фильтром безопасности: агент честно скажет «нет данных»."""
+    """Например, ответ заблокирован фильтром безопасности: агент скажет «нет данных»."""
     models = StubModels([types.GenerateContentResponse(candidates=[])])
     client = cast(genai.Client, SimpleNamespace(aio=SimpleNamespace(models=models)))
     turn = await GeminiAgentModel(client, ["m"]).start("q", Language.EN).next_turn([])
