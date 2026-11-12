@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chartroom</title>
+<link rel="stylesheet" href="/ui/app.css">
+</head>
+<body>
+<main>
+  <h1>Chartroom <small>ассистент по судовым процедурам · демо</small></h1>
+
+  <section id="login">
+    <form id="login-form">
+      <label for="email">Email</label><input id="email" type="email" autocomplete="username" required>
+      <label for="password">Пароль</label><input id="password" type="password" autocomplete="current-password" required>
+      <button type="submit">Войти</button>
+    </form>
+    <p id="login-error" class="bad" role="alert"></p>
+  </section>
+
+  <div id="app" hidden>
+    <nav aria-label="Разделы">
+      <button data-tab="ask" aria-current="true">Вопрос</button>
+      <button data-tab="report">Отчёт</button>
+      <button data-tab="upload">Документ</button>
+      <button id="logout" class="link">Выйти</button>
+    </nav>
+
+    <section id="tab-ask">
+      <form id="ask-form">
+        <label for="mode">Режим</label>
+        <select id="mode">
+          <option value="/ask">Вопрос по процедурам</option>
+          <option value="/agent/ask">Агент (процедуры и мои отчёты)</option>
+        </select>
+        <label for="question">Вопрос</label>
+        <textarea id="question" maxlength="1000" required></textarea>
+        <button type="submit">Спросить</button>
+      </form>
+      <div id="ask-result" aria-live="polite"></div>
+    </section>
+
+    <section id="tab-report" hidden>
+      <form id="report-form">
+        <label for="template">Шаблон</label><select id="template"></select>
+        <label for="report-text">Текст отчёта своими словами</label>
+        <textarea id="report-text" required></textarea>
+        <button type="submit">Разобрать</button>
+      </form>
+      <div id="report-result" aria-live="polite"></div>
+    </section>
+
+    <section id="tab-upload" hidden>
+      <p class="muted">Только для администратора. Файл PDF, DOCX, Markdown или TXT.</p>
+      <form id="upload-form">
+        <div class="row">
+          <div><label for="u-title">Название</label><input id="u-title" required></div>
+          <div><label for="u-version">Версия</label><input id="u-version" required></div>
+        </div>
+        <div class="row">
+          <div><label for="u-language">Язык</label><select id="u-language"><option value="ru">ru</option><option value="en">en</option></select></div>
+          <div><label for="u-date">Дата выпуска</label><input id="u-date" type="date" required></div>
+        </div>
+        <label for="u-file">Файл</label><input id="u-file" type="file" accept=".pdf,.docx,.md,.txt" required>
+        <button type="submit">Загрузить</button>
+      </form>
+      <div id="upload-result" aria-live="polite"></div>
+    </section>
+  </div>
+</main>
+
+<script src="/ui/app.js" defer></script>
+</body>
+</html>
