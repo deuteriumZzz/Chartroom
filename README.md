@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/assets/banner.svg" alt="Chartroom — ассистент по судовым процедурам" width="100%">
+<img src="docs/assets/header.svg" alt="Chartroom — ассистент по судовым процедурам" width="100%">
 
 **RAG-ассистент по судовым процедурам (SMS/ISM) с проверяемыми цитатами, разбором отчётов и агентом с вызовом функций.**
 

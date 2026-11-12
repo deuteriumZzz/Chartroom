@@ -40,7 +40,6 @@
   <!-- заголовок -->
   <g font-family="'Helvetica Neue', Helvetica, Arial, sans-serif">
     <text x="72" y="118" font-size="14" fill="#c9a24a" letter-spacing="5">SMS · ISM · RAG</text>
-    <line x1="72" y1="136" x2="132" y2="136" stroke="#c9a24a" stroke-width="2"/>
     <text x="70" y="206" font-size="84" font-weight="300" fill="#f3f6f9" letter-spacing="6">Chartroom</text>
     <text x="74" y="246" font-size="20" fill="#9fc2de" letter-spacing="1">Ассистент по судовым процедурам с проверяемыми цитатами</text>
   </g>
