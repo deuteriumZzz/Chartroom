@@ -12,15 +12,19 @@ from chartroom.knowledge.service import DocumentLibrary
 from chartroom.main import create_app
 from chartroom.qa.domain import GeneratedAnswer, RefusalPolicy
 from chartroom.qa.service import QuestionService
+from chartroom.reports.service import ReportService
 from chartroom.shared.errors import DomainError
 from tests.fakes import (
     FakePasswordHasher,
     InMemoryIdentityUnitOfWork,
     InMemoryKnowledgeUnitOfWork,
     InMemoryQaUnitOfWork,
+    InMemoryReportsUnitOfWork,
     KnowledgeStore,
     QaStore,
     RecordingQueue,
+    ReportsStore,
+    ScriptedExtractor,
     ScriptedGenerator,
     StaticPassageRetriever,
 )
@@ -47,6 +51,9 @@ def app() -> FastAPI:
             library=library,
             questions=questions,
             passages=StaticPassageRetriever([]),
+            reports=ReportService(
+                lambda: InMemoryReportsUnitOfWork(ReportsStore()), ScriptedExtractor({})
+            ),
         )
     )
 

@@ -1,0 +1,19 @@
+{
+  "name": "drill_checklist",
+  "title": "Чек-лист учебной тревоги — поля подтвердить автором",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "drill_date": {"type": "string", "format": "date", "title": "Дата учения"},
+      "drill_type": {"type": "string", "enum": ["fire", "abandon_ship", "man_overboard", "enclosed_space", "oil_spill"], "title": "Вид тревоги"},
+      "start_time": {"type": "string", "format": "time", "title": "Начало"},
+      "muster_minutes": {"type": "number", "minimum": 0, "maximum": 30, "title": "Время сбора, мин"},
+      "crew_total": {"type": "integer", "minimum": 1, "title": "Экипаж по судовой роли"},
+      "crew_present": {"type": "integer", "minimum": 0, "title": "Присутствовало"},
+      "equipment_tested": {"type": "boolean", "title": "Оборудование проверено в действии"},
+      "deficiencies": {"type": "string", "title": "Выявленные недостатки"}
+    },
+    "required": ["drill_date", "drill_type", "crew_total", "crew_present", "equipment_tested"],
+    "x-lte": [["crew_present", "crew_total"]]
+  }
+}

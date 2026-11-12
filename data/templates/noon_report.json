@@ -1,0 +1,21 @@
+{
+  "name": "noon_report",
+  "title": "Суточный отчёт (полдень) — поля подтвердить автором",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "report_date": {"type": "string", "format": "date", "title": "Дата отчёта"},
+      "noon_time": {"type": "string", "format": "time", "title": "Время (судовое)"},
+      "latitude": {"type": "number", "minimum": -90, "maximum": 90, "title": "Широта, градусы"},
+      "longitude": {"type": "number", "minimum": -180, "maximum": 180, "title": "Долгота, градусы"},
+      "speed_knots": {"type": "number", "minimum": 0, "maximum": 30, "title": "Средняя скорость, уз"},
+      "distance_nm": {"type": "number", "minimum": 0, "maximum": 720, "title": "Пройдено за сутки, миль"},
+      "rob_hfo_t": {"type": "number", "minimum": 0, "title": "Остаток HFO, т"},
+      "rob_mgo_t": {"type": "number", "minimum": 0, "title": "Остаток MGO, т"},
+      "hfo_consumption_t": {"type": "number", "minimum": 0, "maximum": 150, "title": "Расход HFO за сутки, т"},
+      "wind_force_bft": {"type": "integer", "minimum": 0, "maximum": 12, "title": "Ветер, баллы Бофорта"},
+      "remarks": {"type": "string", "title": "Замечания"}
+    },
+    "required": ["report_date", "latitude", "longitude", "speed_knots", "distance_nm", "rob_hfo_t", "rob_mgo_t"]
+  }
+}

@@ -37,6 +37,10 @@ from chartroom.qa.adapters.persistence import SqlQaUnitOfWork
 from chartroom.qa.domain import RefusalPolicy
 from chartroom.qa.ports import AnswerGenerator, PassageRetriever
 from chartroom.qa.service import QuestionService
+from chartroom.reports.adapters.gemini import GeminiReportExtractor, UnconfiguredReportExtractor
+from chartroom.reports.adapters.persistence import SqlReportsUnitOfWork
+from chartroom.reports.ports import ReportExtractor
+from chartroom.reports.service import ReportService
 from chartroom.shared.config import Settings
 
 
@@ -46,6 +50,7 @@ class Container:
     library: DocumentLibrary
     questions: QuestionService
     passages: PassageRetriever  # поиск фрагментов отдельно от ответа — для eval
+    reports: ReportService
     engine: AsyncEngine | None = None  # None, если фабрику сессий передали снаружи (тесты)
     qdrant: AsyncQdrantClient | None = None  # None, если поиск подменили (тесты)
 
@@ -62,6 +67,7 @@ def build_container(
     queue: IndexingQueue | None = None,
     retriever: PassageRetriever | None = None,
     generator: AnswerGenerator | None = None,
+    extractor: ReportExtractor | None = None,
 ) -> Container:
     """Аргументы после settings подменяют тесты; в работе всё строится из настроек."""
     engine = None
@@ -85,9 +91,11 @@ def build_container(
     # Без ключа API стартует: загрузка работает, а поиск и генерация отвечают 503.
     embedder: QueryEmbedder = UnconfiguredQueryEmbedder()
     default_generator: AnswerGenerator = UnconfiguredAnswerGenerator()
+    default_extractor: ReportExtractor = UnconfiguredReportExtractor()
     if gemini is not None:
         embedder = GeminiEmbedder(gemini, settings.embedding_model, settings.embedding_dimensions)
         default_generator = GeminiAnswerGenerator(gemini, settings.generation_models)
+        default_extractor = GeminiReportExtractor(gemini, settings.generation_models)
 
     qdrant = None
     if retriever is None:
@@ -109,6 +117,9 @@ def build_container(
         library=library,
         questions=questions,
         passages=retriever,
+        reports=ReportService(
+            lambda: SqlReportsUnitOfWork(sessions), extractor or default_extractor
+        ),
         engine=engine,
         qdrant=qdrant,
     )

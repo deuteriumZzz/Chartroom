@@ -1,0 +1,21 @@
+{
+  "name": "mooring_operation",
+  "title": "Швартовная операция — поля подтвердить автором",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "operation_date": {"type": "string", "format": "date", "title": "Дата"},
+      "port": {"type": "string", "title": "Порт"},
+      "berth": {"type": "string", "title": "Причал"},
+      "first_line_time": {"type": "string", "format": "time", "title": "Подан первый конец"},
+      "all_fast_time": {"type": "string", "format": "time", "title": "Ошвартованы"},
+      "lines_forward": {"type": "integer", "minimum": 0, "maximum": 12, "title": "Концов на баке"},
+      "lines_aft": {"type": "integer", "minimum": 0, "maximum": 12, "title": "Концов на корме"},
+      "tugs_used": {"type": "integer", "minimum": 0, "maximum": 4, "title": "Буксиров"},
+      "injuries": {"type": "boolean", "title": "Были травмы"},
+      "remarks": {"type": "string", "title": "Замечания"}
+    },
+    "required": ["operation_date", "port", "first_line_time", "all_fast_time", "lines_forward", "lines_aft", "injuries"],
+    "x-lte": [["first_line_time", "all_fast_time"]]
+  }
+}

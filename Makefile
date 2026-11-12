@@ -19,9 +19,10 @@ test:
 user:
 	docker compose exec api python -m chartroom.cli create-user $(EMAIL) --role $(ROLE)
 
-# Загрузить демо-корпус и поставить его в очередь индексации (нужен GEMINI_API_KEY в .env).
+# Загрузить демо-корпус в индексацию и стартовые шаблоны отчётов (нужен GEMINI_API_KEY в .env).
 seed:
 	docker compose exec api python -m chartroom.cli seed-corpus
+	docker compose exec api python -m chartroom.cli seed-templates
 
 # Eval на поднятом стеке (make up && make seed): процесс на хосте ходит в Postgres и Qdrant по
 # localhost. EVAL_USER — пользователь, от имени которого задаются вопросы; ARGS=--retrieval-only — без

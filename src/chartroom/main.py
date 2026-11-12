@@ -8,6 +8,7 @@ from chartroom.bootstrap import Container, build_container
 from chartroom.identity import api as identity_api
 from chartroom.knowledge import api as knowledge_api
 from chartroom.qa import api as qa_api
+from chartroom.reports import api as reports_api
 from chartroom.shared.config import get_settings
 from chartroom.shared.errors import (
     AuthenticationError,
@@ -57,6 +58,7 @@ def create_app(container: Container | None = None) -> FastAPI:
     app.include_router(identity_api.router)
     app.include_router(knowledge_api.router)
     app.include_router(qa_api.router)
+    app.include_router(reports_api.router)
 
     @app.get("/health", tags=["system"])
     async def health() -> dict[str, str]:

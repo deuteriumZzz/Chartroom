@@ -4,6 +4,7 @@ create-user — первый admin создаётся здесь: открыто
 chunk       — показать, как документ режется на фрагменты (проверка корпуса и настройка нарезки).
 seed-corpus — загрузить демо-корпус по манифесту и поставить его в очередь индексации.
 eval        — прогнать золотой набор, записать отчёт в eval/results и таблицу метрик в README.
+seed-templates — загрузить стартовые шаблоны отчётов (уже существующие пропускаются).
 """
 
 import argparse
@@ -16,6 +17,7 @@ import sys
 import textwrap
 from collections.abc import Sequence
 from datetime import date
+from typing import Any
 
 from chartroom.bootstrap import build_container, build_document_chunker
 from chartroom.evaluation.adapters.files import (
@@ -123,6 +125,26 @@ def _run_eval(args: argparse.Namespace) -> None:
     print(f"{markdown}\n\nreport: {report}")
 
 
+def _load_templates(directory: pathlib.Path) -> list[dict[str, Any]]:
+    return [json.loads(p.read_text(encoding="utf-8")) for p in sorted(directory.glob("*.json"))]
+
+
+async def _seed_templates(templates: list[dict[str, Any]]) -> None:
+    container = build_container(get_settings())
+    try:
+        existing = {t.name for t in await container.reports.templates()}
+        for spec in templates:
+            if spec["name"] in existing:
+                print(f"skipped  {spec['name']}  (already exists)")
+                continue
+            template = await container.reports.create_template(
+                spec["name"], spec["title"], spec["schema"]
+            )
+            print(f"created  {template.name}  (version {template.version})")
+    finally:
+        await container.aclose()
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="chartroom")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -135,6 +157,8 @@ def _parser() -> argparse.ArgumentParser:
     seed.add_argument(
         "--manifest", type=pathlib.Path, default=pathlib.Path("data/corpus/manifest.json")
     )
+    templates = commands.add_parser("seed-templates", help="загрузить стартовые шаблоны отчётов")
+    templates.add_argument("--dir", type=pathlib.Path, default=pathlib.Path("data/templates"))
     evaluate = commands.add_parser("eval", help="прогнать золотой набор и записать метрики")
     evaluate.add_argument("--as", dest="as_email", required=True, help="email пользователя")
     evaluate.add_argument("--golden", type=pathlib.Path, default=pathlib.Path("eval/golden.yaml"))
@@ -155,6 +179,8 @@ def main(argv: Sequence[str] | None = None) -> None:
             _show_chunks(args.path)
         elif args.command == "seed-corpus":
             asyncio.run(_seed_corpus(_load_corpus(args.manifest)))
+        elif args.command == "seed-templates":
+            asyncio.run(_seed_templates(_load_templates(args.dir)))
         else:
             _run_eval(args)
     except (DomainError, ServiceUnavailableError, OSError, ValueError) as e:
