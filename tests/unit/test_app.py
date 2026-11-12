@@ -37,7 +37,7 @@ def app() -> FastAPI:
     library = DocumentLibrary(lambda: InMemoryKnowledgeUnitOfWork(store), RecordingQueue())
     questions = QuestionService(
         StaticPassageRetriever([]),
-        ScriptedGenerator(GeneratedAnswer("", (), refusal=True)),
+        ScriptedGenerator(GeneratedAnswer("", (), refusal=True, model="scripted-model")),
         RefusalPolicy(min_similarity=0.5),
         lambda: InMemoryQaUnitOfWork(QaStore()),
     )

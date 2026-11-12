@@ -288,7 +288,6 @@ class StaticPassageRetriever:
 class ScriptedGenerator:
     """Порт AnswerGenerator для тестов: заранее заданный ответ модели и журнал вызовов."""
 
-    model = "scripted-model"
     prompt_version = "test.v1"
 
     def __init__(self, answer: GeneratedAnswer) -> None:

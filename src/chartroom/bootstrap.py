@@ -86,11 +86,11 @@ def build_container(
     default_generator: AnswerGenerator = UnconfiguredAnswerGenerator()
     if gemini is not None:
         embedder = GeminiEmbedder(gemini, settings.embedding_model, settings.embedding_dimensions)
-        default_generator = GeminiAnswerGenerator(gemini, settings.generation_model)
+        default_generator = GeminiAnswerGenerator(gemini, settings.generation_models)
 
     qdrant = None
     if retriever is None:
-        qdrant = AsyncQdrantClient(url=settings.qdrant_url)
+        qdrant = _qdrant_client(settings)
         chunks = ChunkRetriever(
             uow_factory=lambda: SqlKnowledgeUnitOfWork(sessions),
             embedder=embedder,
@@ -106,6 +106,12 @@ def build_container(
     return Container(
         identity=identity, library=library, questions=questions, engine=engine, qdrant=qdrant
     )
+
+
+def _qdrant_client(settings: Settings) -> AsyncQdrantClient:
+    # Версии клиента и сервера закреплены вместе (uv.lock и docker-compose.yml): проверка
+    # совместимости при каждом старте — лишний сетевой вызов.
+    return AsyncQdrantClient(url=settings.qdrant_url, check_compatibility=False)
 
 
 def _gemini_client(settings: Settings) -> genai.Client | None:
@@ -144,7 +150,7 @@ def build_worker_container(settings: Settings) -> WorkerContainer:
     # к прошлому loop, сломался бы, поэтому worker работает без пула.
     engine = create_async_engine(settings.database_url, poolclass=NullPool)
     sessions = async_sessionmaker(engine, expire_on_commit=False)
-    qdrant = AsyncQdrantClient(url=settings.qdrant_url)
+    qdrant = _qdrant_client(settings)
     gemini = _gemini_client(settings)
     if gemini is None:
         raise RuntimeError("GEMINI_API_KEY is required to run the indexing worker")

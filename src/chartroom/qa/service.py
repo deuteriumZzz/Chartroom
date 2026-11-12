@@ -44,7 +44,7 @@ class QuestionService:
             answer = Answer.refused(language)  # нечем подтвердить ответ — модель не вызываем
         else:
             generated = await self._generator.generate(question, language, passages)
-            model, prompt_version = self._generator.model, self._generator.prompt_version
+            model, prompt_version = generated.model, self._generator.prompt_version
             citations, warning = verify_citations(generated.citations, passages)
             if generated.refusal or not citations:
                 # Ответ без подтверждённой цитаты не показываем.

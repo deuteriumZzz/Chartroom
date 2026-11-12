@@ -21,9 +21,6 @@ class PassageRetriever(Protocol):
 
 class AnswerGenerator(Protocol):
     @property
-    def model(self) -> str: ...
-
-    @property
     def prompt_version(self) -> str: ...
 
     async def generate(

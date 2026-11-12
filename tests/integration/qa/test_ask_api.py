@@ -21,6 +21,7 @@ ANSWER = GeneratedAnswer(
     "Закройте быстрозапорные клапаны топлива.",
     citations=(RawCitation(1, "Close the fuel valves"), RawCitation(9, "ghost")),
     refusal=False,
+    model="scripted-model",
 )
 Client = tuple[AsyncClient, Container]
 

@@ -77,11 +77,12 @@ class RawCitation:
 
 @dataclass(frozen=True, slots=True)
 class GeneratedAnswer:
-    """Ответ модели как есть: текст, непроверенные ссылки, признак отказа."""
+    """Ответ модели как есть: текст, непроверенные ссылки, отказ и какая модель ответила."""
 
     text: str
     citations: tuple[RawCitation, ...]
     refusal: bool
+    model: str
 
 
 @dataclass(frozen=True, slots=True)

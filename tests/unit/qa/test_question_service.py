@@ -21,7 +21,9 @@ from tests.fakes import InMemoryQaUnitOfWork, QaStore, ScriptedGenerator, Static
 POLICY = RefusalPolicy(min_similarity=0.6)
 VALVES = Passage(1, 7, "Fire", "Fire / 4.4 Engine room", None, "Close the fuel valves.", 0.03, 0.82)
 ALARM = Passage(1, 7, "Fire", "Fire / 4.2 Alarm", None, "Sound the general alarm.", 0.02, 0.64)
-GOOD = GeneratedAnswer("Close the fuel valves.", (RawCitation(1, "Close the fuel valves"),), False)
+GOOD = GeneratedAnswer(
+    "Close the fuel valves.", (RawCitation(1, "Close the fuel valves"),), False, "scripted-model"
+)
 
 
 OFFICER = 7
@@ -82,11 +84,21 @@ async def test_refusal_without_calling_the_model(passages: list[Passage]) -> Non
 @pytest.mark.parametrize(
     ("generated", "warning"),
     [
-        (GeneratedAnswer("", (), refusal=True), False),
-        (GeneratedAnswer("Unsupported claim.", (), refusal=False), False),
-        (GeneratedAnswer("Made up.", (RawCitation(9, "anything"),), refusal=False), True),
+        (GeneratedAnswer("", (), refusal=True, model="scripted-model"), False),
+        (GeneratedAnswer("Unsupported claim.", (), refusal=False, model="scripted-model"), False),
         (
-            GeneratedAnswer("Misquoted.", (RawCitation(1, "Open the fuel valves"),), refusal=False),
+            GeneratedAnswer(
+                "Made up.", (RawCitation(9, "anything"),), refusal=False, model="scripted-model"
+            ),
+            True,
+        ),
+        (
+            GeneratedAnswer(
+                "Misquoted.",
+                (RawCitation(1, "Open the fuel valves"),),
+                refusal=False,
+                model="scripted-model",
+            ),
             True,
         ),
     ],
@@ -109,7 +121,9 @@ async def test_invalid_citation_is_dropped_and_flagged_but_valid_ones_stay() -> 
         RawCitation(2, "Sound the general alarm"),
         RawCitation(5, "ghost"),
     )
-    service, _, _ = _service([VALVES, ALARM], GeneratedAnswer("Valves, alarm.", citations, False))
+    service, _, _ = _service(
+        [VALVES, ALARM], GeneratedAnswer("Valves, alarm.", citations, False, "m")
+    )
     answer = await service.ask("fire?")
     assert (answer.refusal, answer.citation_warning) == (False, True)
     assert [c.quote for c in answer.citations] == [
