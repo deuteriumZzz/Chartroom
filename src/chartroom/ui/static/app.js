@@ -43,6 +43,7 @@ function renderAnswer(box, data) {
 
 $("login-form").addEventListener("submit", async (e) => {
   e.preventDefault();
+  $("login-error").textContent = "";
   try {
     const form = new URLSearchParams({ username: $("email").value, password: $("password").value });
     token = (await api("/auth/login", { method: "POST", body: form })).access_token;
